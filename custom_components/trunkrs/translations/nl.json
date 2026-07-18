@@ -1,0 +1,159 @@
+{
+  "title": "Trunkrs",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Trunkrs instellen",
+        "description": "Vul de postcode in waarop je pakketten worden bezorgd. Trunkrs herkent een pakket aan het Trunkrs-nummer samen met de bezorgpostcode, dus deze wordt gebruikt als standaard voor elk pakket dat je toevoegt.\n\nPakketten voeg je toe na het instellen.",
+        "data": {
+          "postal_code": "Postcode"
+        },
+        "data_description": {
+          "postal_code": "Bijv. 1234AB. Wordt gebruikt als standaard bezorgadres voor pakketten die je toevoegt."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Trunkrs is niet bereikbaar. Controleer je netwerk.",
+      "invalid_postcode": "Vul een geldige Nederlandse postcode in, bijv. 1234AB."
+    },
+    "abort": {
+      "already_configured": "Er is al een Trunkrs-hub voor deze postcode ingesteld."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Trunkrs-opties",
+        "sections": {
+          "parcels": {
+            "name": "Pakketten",
+            "data": {
+              "add": "Pakket toevoegen",
+              "remove": "Pakketten verwijderen"
+            },
+            "data_description": {
+              "add": "Vul een Trunkrs-nummer in om het te volgen. Het gebruikt de postcode van de hub en wordt bij Trunkrs gecontroleerd voordat het wordt toegevoegd."
+            }
+          },
+          "delivered": {
+            "name": "Bezorgde pakketten",
+            "data": {
+              "delivered_filter_type": "Filteren op",
+              "delivered_filter_amount": "Aantal"
+            },
+            "data_description": {
+              "delivered_filter_type": "Toon bezorgde pakketten van de afgelopen X dagen, of beperk tot de X meest recente.",
+              "delivered_filter_amount": "Aantal dagen of pakketten om te tonen."
+            }
+          },
+          "history": {
+            "name": "Pakketgeschiedenis",
+            "data": {
+              "include_history": "Statusgeschiedenis toevoegen"
+            },
+            "data_description": {
+              "include_history": "Voegt per pakket een geschiedenis-attribuut toe met elke statusupdate (tijdstip, status, oorspronkelijke tekst). Standaard uit."
+            }
+          },
+          "polling": {
+            "name": "Verversen",
+            "data": {
+              "refresh_interval": "Ververs elke"
+            },
+            "data_description": {
+              "refresh_interval": "Hoe vaak de integratie bij Trunkrs controleert op updates. Een langzamer interval is vriendelijker voor de API van Trunkrs; de standaard van 30 minuten is voor de meeste pakketten ruim voldoende."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_trunkrs_nr": "Dat lijkt geen Trunkrs-nummer te zijn.",
+      "already_tracked": "Dat pakket wordt al gevolgd.",
+      "unknown_parcel": "Trunkrs kent dit nummer niet bij de postcode van de hub. Controleer beide."
+    }
+  },
+  "selector": {
+    "refresh_interval": {
+      "options": {
+        "15": "15 minuten",
+        "30": "30 minuten",
+        "60": "60 minuten",
+        "120": "120 minuten",
+        "240": "240 minuten"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Dagen",
+        "parcels": "Aantal pakketten"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Pakket volgen",
+      "description": "Begin met het volgen van een Trunkrs-pakket op nummer.",
+      "fields": {
+        "trunkrs_nr": {
+          "name": "Trunkrs-nummer",
+          "description": "Het Trunkrs-nummer van het pakket."
+        },
+        "postal_code": {
+          "name": "Postcode",
+          "description": "Bezorgpostcode. Kiest de hub als er meerdere zijn ingesteld; anders wordt de enige hub gebruikt."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Pakket niet meer volgen",
+      "description": "Stop met het volgen van een Trunkrs-pakket op nummer.",
+      "fields": {
+        "trunkrs_nr": {
+          "name": "Trunkrs-nummer",
+          "description": "Het Trunkrs-nummer dat je niet meer wilt volgen."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Een pakket is geregistreerd",
+      "parcel_status_changed": "De status van een pakket is gewijzigd",
+      "parcel_delivered": "Een pakket is bezorgd",
+      "parcel_delivery_time_changed": "De verwachte bezorgtijd van een pakket is gewijzigd"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Verversen"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Bezorgingen"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Inkomende pakketten",
+        "unit_of_measurement": "pakketten"
+      },
+      "next_delivery": {
+        "name": "Volgende bezorging"
+      },
+      "delivered_parcels": {
+        "name": "Bezorgde pakketten",
+        "unit_of_measurement": "pakketten"
+      },
+      "last_update": {
+        "name": "Laatste succesvolle update"
+      },
+      "parcel": {
+        "name": "Pakket {barcode}"
+      }
+    }
+  }
+}
