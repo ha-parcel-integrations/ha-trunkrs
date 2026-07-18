@@ -1,0 +1,63 @@
+name: 📦 Share a Trunkrs parcel payload
+description: Help finish the integration — this is the one thing it still needs.
+title: "[payload] "
+labels: ["payload-sample"]
+assignees:
+  - peternijssen
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Thank you!** The connection to Trunkrs works, but the integration
+        cannot yet read the *contents* of a tracking response — which is why
+        every parcel shows up as `unknown`. Nobody involved has a Trunkrs
+        parcel to capture one from, so a single real response from you
+        unblocks the status mapping, delivery window, history and calendar.
+
+        ### ⚠️ Read this before pasting
+
+        The payload is about **your** parcel and may contain your name and
+        address. The integration redacts commonly used field names, but
+        because the exact field names are unknown it **cannot be precise**.
+
+        **Please read through what you paste and remove anything personal.**
+        Structure and status values are what we need — not your address.
+  - type: textarea
+    id: payload
+    attributes:
+      label: The payload
+      description: |
+        Easiest route: **Settings → Devices & services → Trunkrs → ⋮ →
+        Download diagnostics**, then paste the contents here (or attach the
+        file). The part we need sits under each parcel's `raw` key.
+
+        Or with curl:
+        `curl -s -u "<TRUNKRS_NR>:<POSTCODE>" https://api.trunkrs.app/v2/tracing/details`
+      render: json
+    validations:
+      required: true
+  - type: input
+    id: status
+    attributes:
+      label: What was the parcel's actual status at that moment?
+      description: e.g. "on its way", "delivered", "at a pickup point" — this tells us which raw value maps to which canonical status.
+      placeholder: "e.g. out for delivery"
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have read through the payload above and removed anything personal.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Integration version
+      placeholder: "e.g. 0.1.0"
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "e.g. 2026.7.0"

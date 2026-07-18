@@ -120,7 +120,8 @@ one:
    know the field names yet, it can only redact commonly used ones. Remove
    anything personal (names, address, contact details) that survived.
 4. Attach it to a
-   [new issue](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/new).
+   [**Share a Trunkrs parcel payload**](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/new?template=share_payload.yml)
+   issue — the template walks you through it.
 
 The payload is preserved untouched under each parcel's `raw` key — that is the
 part we need. With it, the status mapping, delivery window, history and
