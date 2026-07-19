@@ -5,9 +5,7 @@ Track your [Trunkrs](https://trunkrs.nl) parcels in Home Assistant.
 > ### ⚠️ Early release — one thing still incomplete
 >
 > The integration is functional: parcels are validated, polled and mapped —
-> sender, receiver, delivery window, history and the delivered state all work,
-> thanks to a payload contributed in
-> [#1](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/1).
+> sender, receiver, delivery window, history and the delivered state all work.
 >
 > What is still incomplete is the **status vocabulary**. Only
 > `SHIPMENT_DELIVERED` has been observed so far, so a parcel in any other state
@@ -129,9 +127,6 @@ Paste that line into an
 together with what the parcel was actually doing at the time ("on its way",
 "at the depot", …) and it gets mapped. No personal data involved — just the
 status name.
-
-Thanks to [@joerimul](https://github.com/joerimul) for contributing the payload
-that made the field mapping possible.
 
 ## Disclaimer
 
