@@ -34,47 +34,29 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# ===========================================================================
-# ⚠️  PAYLOAD MAPPING GAP — the one thing this integration still needs
-# ===========================================================================
+# Trunkrs ``currentState.stateName`` -> canonical ParcelStatus.
 #
-# The Trunkrs *transport* is fully reverse-engineered and live-confirmed:
-# host, Basic-auth scheme and both endpoints all behave as expected (a wrong
-# number/postcode pair returns 401, a right one returns 200). What we have
-# NOT been able to capture is the **body** of a successful
-# ``GET /tracing/details`` response, because that needs a real Trunkrs parcel.
+# The payload shape was contributed in issue #1 (thanks @joerimul); see
+# ``docs/api/tracing_details.md`` for the full sample and field mapping.
 #
-# Until someone shares one, everything below that reads *fields out of* the
-# payload is deliberately left unmapped rather than guessed:
-#
-#   * ``_STATUS_MAP``      — empty; every parcel reports ``unknown``.
-#   * ``normalize_parcel`` — fills only what we know for certain (the barcode
-#                            is the Trunkrs number the user typed) and leaves
-#                            payload-derived fields ``None``.
-#   * ``build_history``    — returns an empty list; the event array key and
-#                            per-event field names are unknown.
-#
-# Guessing field names here would produce an integration that looks like it
-# works and silently reports wrong data, which is worse than one that honestly
-# reports "unknown". The full raw payload IS preserved on ``parcel["raw"]``
-# and surfaced (redacted) in diagnostics, so a single user download unblocks
-# all of this. See TODO.md for the exact ask.
-#
-# To finish the integration: fill in ``_STATUS_MAP`` and the marked sections
-# of ``normalize_parcel`` / ``build_history``. Nothing else should need to
-# change — the polling, filtering, sorting and event plumbing below is
-# payload-independent and already complete.
-# ===========================================================================
+# ⚠️ The status vocabulary is still INCOMPLETE. Only ``SHIPMENT_DELIVERED`` has
+# actually been observed. The ``SHIPMENT_*`` prefix suggests a family, but the
+# other values are deliberately NOT guessed: a wrong guess would silently
+# report the wrong status, whereas an unmapped one reports ``unknown`` and logs
+# a one-shot warning with a copy-paste issue link — so the rest of the
+# vocabulary collects itself from real users. Add each confirmed value here.
+_STATUS_MAP: dict[str, ParcelStatus] = {
+    "SHIPMENT_DELIVERED": ParcelStatus.DELIVERED,
+}
 
-# Trunkrs raw status value -> canonical ParcelStatus.
-# EMPTY UNTIL A REAL PAYLOAD IS AVAILABLE — see the block above.
-_STATUS_MAP: dict[str, ParcelStatus] = {}
+# The one state we can also act on structurally (``delivered`` / ``delivered_at``
+# / clearing the ETA window), kept as a constant so the test and the mapping
+# cannot drift apart.
+STATE_DELIVERED = "SHIPMENT_DELIVERED"
 
 # Raw statuses we have already warned about, so each unmapped one is logged
 # only once per HA session.
 _unmapped_statuses_logged: set[str] = set()
-# One-shot flag for the "we have a payload but no mapping yet" notice.
-_payload_shape_logged = False
 
 
 def _refresh_interval(entry: ConfigEntry) -> timedelta:
@@ -96,33 +78,12 @@ def _warn_unmapped_status(raw_status: str) -> None:
     )
 
 
-def _log_payload_shape(raw: dict) -> None:
-    """Log the payload's top-level keys once, to help finish the mapping.
-
-    This is the cheapest way for a user to tell us what ``/tracing/details``
-    actually returns without sending the whole (personal) body: the key names
-    alone are enough to write the field mapping.
-    """
-    global _payload_shape_logged
-    if _payload_shape_logged or not raw:
-        return
-    _payload_shape_logged = True
-    _LOGGER.warning(
-        "Trunkrs parcel data is not mapped yet, so parcels will show as "
-        "'unknown'. Please help finish this integration by opening an issue "
-        "at %s with the payload keys below (or, better, by attaching the "
-        "integration's redacted diagnostics download).\n  top-level keys: %s",
-        NEW_ISSUE_URL,
-        sorted(raw.keys()),
-    )
-
-
 def map_parcel_status(raw_status: str | None) -> ParcelStatus:
     """Map a raw Trunkrs status to a canonical :class:`ParcelStatus`.
 
     ``None`` reports ``unknown`` silently; an unmapped non-null status reports
-    ``unknown`` with a one-shot warning. While ``_STATUS_MAP`` is empty this
-    always returns ``unknown`` — see the mapping-gap block at the top.
+    ``unknown`` with a one-shot warning (the vocabulary is still incomplete —
+    see ``_STATUS_MAP``).
     """
     if raw_status is None:
         return ParcelStatus.UNKNOWN
@@ -173,14 +134,35 @@ def build_history(
     Each entry is ``{timestamp, status, raw_status}`` — identical across all
     suite carriers, sorted oldest → newest and capped to ``max_events``.
 
-    ⚠️ NOT IMPLEMENTED: the key holding the event array, and the per-event
-    timestamp/status field names, are unknown until a real payload is
-    available (see the mapping-gap block at the top). Returns ``[]`` for now
-    rather than guessing. When the payload is known, iterate the event array
-    and reuse :func:`map_event_status` + :func:`_parse_iso` exactly as the
-    other suite carriers do.
+    Source is ``deliveryAttempts[]`` (``{stateName, setAt, reasonCode}``),
+    which is a clean list of state transitions and reuses the same status map
+    as the parcel itself. The payload also carries a richer ``auditLogs[]``,
+    but that is internal ops text and every entry identifies a **driver**
+    (``userSub``), so it is deliberately not surfaced — see
+    ``docs/api/tracing_details.md``.
     """
-    return []
+    parseable: list[tuple[datetime, dict]] = []
+    unparseable: list[dict] = []
+    for attempt in (raw or {}).get("deliveryAttempts") or []:
+        if not isinstance(attempt, dict):
+            continue
+        timestamp = attempt.get("setAt")
+        if not timestamp:
+            continue
+        state_name = attempt.get("stateName")
+        entry = {
+            "timestamp": timestamp,
+            "status": map_event_status(state_name),
+            "raw_status": state_name,
+        }
+        dt = _parse_iso(timestamp)
+        if dt is None:
+            unparseable.append(entry)
+        else:
+            parseable.append((dt, entry))
+    parseable.sort(key=lambda item: item[0])
+    ordered = [entry for _, entry in parseable] + unparseable
+    return ordered[-max_events:]
 
 
 def _tracking_url() -> str:
@@ -199,59 +181,55 @@ def normalize_parcel(
 
     Publishes exactly the canonical key set the rest of the suite uses, so the
     aggregator and cross-carrier dashboards can read Trunkrs the same way as
-    every other carrier.
+    every other carrier. Field mapping is documented in
+    ``docs/api/tracing_details.md``.
 
-    ⚠️ PARTIALLY IMPLEMENTED — see the mapping-gap block at the top of this
-    module. Only the fields we can know without the payload are populated:
+    Notes on the two non-obvious choices:
 
-      * ``carrier``  — constant.
-      * ``barcode``  — the Trunkrs number the user entered (we always know it,
-                       it is half of the credential pair).
-      * ``url``      — the consumer tracking page.
-      * ``raw``      — the untouched payload, which is what we need shared.
-
-    Everything else is ``None`` / ``unknown`` on purpose: guessing field names
-    would silently report wrong data. ``delivered`` stays ``False`` so no
-    parcel is ever wrongly filed away as completed.
+    * **Delivery window.** ``timeSlot`` carries both a wide promised slot
+      (``low``/``high``) and a narrow live prediction (``from``/``to``). We
+      prefer the narrow one and fall back to the wide one, because the narrow
+      window is what the tracking page shows but is only populated once the
+      tour is planned. Both are cleared once the parcel is delivered, matching
+      the other suite carriers.
+    * **Pickup.** Trunkrs is a home-delivery courier and the payload carries no
+      pickup/ServicePoint block, so ``pickup`` is always ``False``. The
+      ``shipmentFeatures``/``leaveBehindRemark`` fields describe delivery
+      *preferences* (mailbox, leave with neighbour), not a pickup location, so
+      they deliberately do not set it.
     """
-    _log_payload_shape(raw)
+    state = raw.get("currentState") or {}
+    raw_status = state.get("stateName")
+    delivered = raw_status == STATE_DELIVERED
 
-    # --- TODO(payload): map these from `raw` once a real response is known ---
-    # Suggested order of work, mirroring the other carriers:
-    #   raw_status   = raw.get(<status field>)
-    #   delivered    = <terminal status test>
-    #   delivered_at = raw.get(<delivered timestamp>)
-    #   planned_from / planned_to = <ETA window>
-    #   sender / receiver         = <party names>
-    #   pickup / pickup_point     = <ServicePoint block>
-    raw_status: str | None = None
-    delivered = False
-    delivered_at: str | None = None
-    planned_from: str | None = None
-    planned_to: str | None = None
-    sender: str | None = None
-    receiver: str | None = None
-    pickup = False
-    pickup_point: str | None = None
-    # ------------------------------------------------------------------------
+    time_slot = raw.get("timeSlot") or {}
+    planned_from = time_slot.get("from") or time_slot.get("low")
+    planned_to = time_slot.get("to") or time_slot.get("high")
 
     return {
         "carrier": "Trunkrs",
+        # The number the user entered, NOT ``raw["trunkrsNr"]``. They are the
+        # same in practice (it is half of the credential pair), but the entered
+        # value is the only one guaranteed to be stable: it exists before the
+        # first successful poll, so deriving the barcode from the payload would
+        # change a parcel's unique_id the moment data arrives — churning its
+        # sensor and losing its history. The carrier's own value stays on
+        # ``raw`` for reference.
         "barcode": trunkrs_nr,
-        "sender": sender,
-        "receiver": receiver,
+        "sender": raw.get("senderName") or raw.get("merchantName"),
+        "receiver": raw.get("recipientName"),
         "status": map_parcel_status(raw_status),
         "raw_status": raw_status,
         "delivered": delivered,
-        "delivered_at": delivered_at,
-        "planned_from": planned_from,
-        "planned_to": planned_to,
-        "pickup": pickup,
-        "pickup_point": pickup_point,
+        "delivered_at": state.get("setAt") if delivered else None,
+        "planned_from": None if delivered else planned_from,
+        "planned_to": None if delivered else planned_to,
+        "pickup": False,
+        "pickup_point": None,
         "url": _tracking_url(),
-        # Trunkrs does not expose weight/dimensions on the consumer endpoint as
-        # far as we know; kept on the shape for parity with DPD/PostNL so the
-        # aggregator can read every carrier the same way.
+        # Trunkrs does not expose weight/dimensions on the consumer endpoint;
+        # kept on the shape for parity with DPD/PostNL so the aggregator can
+        # read every carrier the same way.
         "weight": None,
         "dimensions": None,
         "history": build_history(raw) if include_history else None,

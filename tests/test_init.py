@@ -16,7 +16,7 @@ from custom_components.trunkrs.services import (
     SERVICE_UNTRACK_PARCEL,
 )
 
-_PAYLOAD = {"unknownField": "value"}
+from .payloads import IN_TRANSIT as _PAYLOAD
 _GET = "custom_components.trunkrs.api.TrunkrsApiClient.async_get_parcel"
 
 

@@ -5,11 +5,15 @@ parcel tracking. Distributed via HACS; not part of HA core.
 
 ## ⚠️ Read TODO.md first
 
-This is a **preview release**. The transport is proven but the response
-**payload is not mapped yet**, so every parcel reports `unknown`. See
-[TODO.md](TODO.md) for exactly what is missing and how to unblock it. Do not
-"fix" the unmapped fields by guessing field names — that is the one thing this
-repo deliberately refuses to do.
+The field mapping is **done** (payload contributed in #1; full sample and
+mapping table in `docs/api/tracing_details.md`, which is gitignored/local-only).
+
+What remains is the **status vocabulary**: `_STATUS_MAP` holds exactly one
+confirmed value, `SHIPMENT_DELIVERED`. Everything else reports `unknown` plus a
+one-shot warning. **Do not add speculative `SHIPMENT_*` entries** — a wrong
+guess silently reports the wrong status, while `unknown` is honest and collects
+the real names from users. Add a value only when someone has confirmed it
+against a real parcel. See [TODO.md](TODO.md).
 
 ## Always consult HA developer documentation
 
@@ -46,7 +50,24 @@ Reverse-engineered from the `parcel.trunkrs.nl` consumer tracking SPA.
 - **`GET /tracing/verify`** → 200 valid / 401 invalid. Used to validate before
   storing a parcel — a capability GLS does not have, so unlike GLS this
   integration rejects typos up front.
-- **`GET /tracing/details`** → the tracking payload. No query parameters.
+- **`GET /tracing/details`** → the tracking payload. No query parameters; the
+  parcel identity is entirely in the Basic auth header. Field mapping lives in
+  `docs/api/tracing_details.md`. Highlights:
+  - `currentState.stateName` drives `status`; `deliveryAttempts[]` (same
+    vocabulary) drives `history`.
+  - `timeSlot` carries **two** windows: `low`/`high` is the wide promised slot,
+    `from`/`to` the narrow live prediction. We prefer `from`/`to` and fall back
+    to `low`/`high`, because the narrow one only appears once the tour is
+    planned. Both are cleared once delivered.
+  - `barcode` is the number the **user entered**, never `raw["trunkrsNr"]` —
+    it drives the sensor's `unique_id`, and deriving it from the payload would
+    churn the entity (and lose its history) on the first successful poll.
+  - `auditLogs[]` is richer than `deliveryAttempts[]` but is internal ops text
+    and every entry identifies a driver (`userSub`) — deliberately unused.
+  - PII to keep redacting: `recipientLocation` (address + lat/long),
+    `recipientName`/`senderName`/`merchantName`, the **neighbour** fields on
+    `currentState`, free-text `remark`/`leaveBehindRemark`, and the driver's
+    `userSub`/`driverId`/`polyline`.
 
 ## Architecture: built on the GLS/Dragonfly template
 

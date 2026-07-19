@@ -2,17 +2,18 @@
 
 Track your [Trunkrs](https://trunkrs.nl) parcels in Home Assistant.
 
-> ### ⚠️ Preview release — help wanted
+> ### ⚠️ Early release — one thing still incomplete
 >
-> The connection to Trunkrs works: parcels are validated and polled
-> successfully. What is **not** finished is reading the details out of the
-> response — so every parcel currently shows up as **`unknown`**, with no
-> status, delivery window or history.
+> The integration is functional: parcels are validated, polled and mapped —
+> sender, receiver, delivery window, history and the delivered state all work,
+> thanks to a payload contributed in
+> [#1](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/1).
 >
-> That last step needs **one real Trunkrs parcel payload**, which we do not
-> have. If you receive Trunkrs parcels, you can unblock it in two minutes —
-> see [How you can help](#how-you-can-help). Everything else is already built,
-> so the moment that payload lands this becomes a complete integration.
+> What is still incomplete is the **status vocabulary**. Only
+> `SHIPMENT_DELIVERED` has been observed so far, so a parcel in any other state
+> reports **`unknown`** (it is never wrongly marked delivered). Each unmapped
+> status logs a one-shot warning with a ready-made issue link — see
+> [How you can help](#how-you-can-help).
 
 Trunkrs has no customer account or inbox: a parcel is identified by its
 **Trunkrs number together with the delivery postal code**. So, like GLS and
@@ -111,21 +112,26 @@ statuses and events.
 
 ## How you can help
 
-The one missing piece is a real `GET /tracing/details` response body. To share
-one:
+The remaining gap is the **status vocabulary**. Trunkrs reports a parcel's
+state as a `SHIPMENT_*` name, and only `SHIPMENT_DELIVERED` has been seen in
+the wild. Anything else maps to `unknown` — deliberately, because guessing a
+status is worse than admitting we do not know it.
 
-1. Set up the integration and add a real Trunkrs parcel.
-2. Go to **Settings → Devices & services → Trunkrs → ⋮ → Download diagnostics**.
-3. **Open the file and read it.** Redaction is best-effort — because we do not
-   know the field names yet, it can only redact commonly used ones. Remove
-   anything personal (names, address, contact details) that survived.
-4. Attach it to a
-   [**Share a Trunkrs parcel payload**](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/new?template=share_payload.yml)
-   issue — the template walks you through it.
+If one of your parcels shows `unknown`, your log contains a line like:
 
-The payload is preserved untouched under each parcel's `raw` key — that is the
-part we need. With it, the status mapping, delivery window, history and
-calendar all start working.
+```
+Unrecognised Trunkrs status — help us map it. Open an issue and paste this line: …
+  status='SHIPMENT_SOMETHING' → reported as 'unknown'
+```
+
+Paste that line into an
+[issue](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/new?template=unrecognised_status.yml)
+together with what the parcel was actually doing at the time ("on its way",
+"at the depot", …) and it gets mapped. No personal data involved — just the
+status name.
+
+Thanks to [@joerimul](https://github.com/joerimul) for contributing the payload
+that made the field mapping possible.
 
 ## Disclaimer
 

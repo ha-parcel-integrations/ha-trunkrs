@@ -25,10 +25,9 @@ from custom_components.trunkrs.coordinator import (
     sort_parcels_by_ts,
 )
 
-# A stand-in for whatever /tracing/details actually returns. The shape is
-# unknown (see the mapping-gap block in coordinator.py), so tests must not
-# depend on any particular field name.
-_PAYLOAD = {"unknownField": "value", "nested": {"a": 1}}
+from .payloads import DELIVERED, IN_TRANSIT
+
+_PAYLOAD = DELIVERED
 
 
 def _entry(hass, parcels=None, options=None) -> MockConfigEntry:
@@ -80,49 +79,128 @@ def test_normalize_publishes_the_full_canonical_key_set():
     assert set(parcel) == _CANONICAL_KEYS
 
 
-def test_normalize_knows_the_barcode_without_the_payload():
+def test_normalize_falls_back_to_the_entered_number_for_the_barcode():
     """The Trunkrs number is half of the credential pair, so it is always known.
 
-    This is what keeps the integration useful while the payload mapping is
-    still missing: parcels are identifiable even from an empty response.
+    A sparse or empty response must still yield an identifiable parcel.
     """
     parcel = normalize_parcel({}, trunkrs_nr="TR123")
     assert parcel["barcode"] == "TR123"
     assert parcel["carrier"] == "Trunkrs"
 
 
+def test_barcode_is_the_entered_number_not_the_payloads():
+    """The barcode drives the sensor's unique_id, so it must never change.
+
+    The entered number exists before the first successful poll; deriving it
+    from the payload would churn the entity (and its history) the moment data
+    arrives.
+    """
+    parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR-ENTERED")
+    assert parcel["barcode"] == "TR-ENTERED"
+    assert parcel["raw"]["trunkrsNr"] == "419719666"
+
+
 def test_normalize_preserves_the_raw_payload_verbatim():
-    """``raw`` is what users share to unblock the mapping — never mutate it."""
+    """``raw`` keeps the untouched response for diagnostics — never mutate it."""
     parcel = normalize_parcel(_PAYLOAD, trunkrs_nr="TR123")
     assert parcel["raw"] == _PAYLOAD
 
 
-def test_normalize_reports_unknown_until_the_payload_is_mapped():
-    """The documented gap: no field mapping yet, so nothing is invented.
+def test_normalize_maps_a_delivered_parcel():
+    parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR123")
+    assert parcel["status"] == ParcelStatus.DELIVERED
+    assert parcel["raw_status"] == "SHIPMENT_DELIVERED"
+    assert parcel["delivered"] is True
+    assert parcel["delivered_at"] == "2026-07-10T17:46:17.864Z"
+    assert parcel["sender"] == "ExampleShop"
+    assert parcel["receiver"] == "John Doe"
 
-    ``delivered`` in particular must stay False — a parcel wrongly filed as
-    delivered would silently disappear from the incoming list.
-    """
-    parcel = normalize_parcel(_PAYLOAD, trunkrs_nr="TR123")
-    assert parcel["status"] == ParcelStatus.UNKNOWN
-    assert parcel["raw_status"] is None
-    assert parcel["delivered"] is False
-    assert parcel["delivered_at"] is None
+
+def test_delivered_parcel_clears_the_delivery_window():
+    """Matches the other suite carriers: no ETA once it has arrived."""
+    parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR123")
     assert parcel["planned_from"] is None
     assert parcel["planned_to"] is None
 
 
+def test_normalize_prefers_the_narrow_delivery_window():
+    """timeSlot carries both windows; from/to is the live prediction."""
+    payload = {**DELIVERED, "currentState": {"stateName": "IN_TRANSIT_X"}}
+    parcel = normalize_parcel(payload, trunkrs_nr="TR123")
+    assert parcel["planned_from"] == "2026-07-10T17:34:40.318Z"
+    assert parcel["planned_to"] == "2026-07-10T18:00:55.318Z"
+
+
+def test_normalize_falls_back_to_the_wide_delivery_window():
+    """Before the tour is planned only low/high are populated."""
+    parcel = normalize_parcel(IN_TRANSIT, trunkrs_nr="TR123")
+    assert parcel["planned_from"] == "2026-07-10T15:00:00.000Z"
+    assert parcel["planned_to"] == "2026-07-10T20:30:00.000Z"
+
+
+def test_unmapped_state_reports_unknown_but_stays_undelivered():
+    """An unmapped status must never be filed away as delivered."""
+    parcel = normalize_parcel(IN_TRANSIT, trunkrs_nr="TR123")
+    assert parcel["status"] == ParcelStatus.UNKNOWN
+    assert parcel["raw_status"] == "SHIPMENT_SOME_UNMAPPED_STATE"
+    assert parcel["delivered"] is False
+    assert parcel["delivered_at"] is None
+
+
+def test_trunkrs_exposes_no_pickup_or_weight():
+    """Home-delivery courier: no ServicePoint, no weight/dimensions."""
+    parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR123")
+    assert parcel["pickup"] is False
+    assert parcel["pickup_point"] is None
+    assert parcel["weight"] is None
+    assert parcel["dimensions"] is None
+
+
 def test_normalize_history_is_opt_in():
-    assert normalize_parcel(_PAYLOAD, trunkrs_nr="TR123")["history"] is None
-    assert (
-        normalize_parcel(_PAYLOAD, trunkrs_nr="TR123", include_history=True)["history"]
-        == []
-    )
+    assert normalize_parcel(DELIVERED, trunkrs_nr="TR123")["history"] is None
+    assert normalize_parcel(
+        DELIVERED, trunkrs_nr="TR123", include_history=True
+    )["history"] == [
+        {
+            "timestamp": "2026-07-10T17:46:17.864Z",
+            "status": ParcelStatus.DELIVERED,
+            "raw_status": "SHIPMENT_DELIVERED",
+        }
+    ]
 
 
-def test_build_history_is_not_implemented_yet():
-    """Documented gap — returns empty rather than guessing event field names."""
-    assert build_history(_PAYLOAD) == []
+def test_build_history_reads_delivery_attempts_oldest_first():
+    raw = {
+        "deliveryAttempts": [
+            {"stateName": "SHIPMENT_DELIVERED", "setAt": "2026-07-10T17:46:17.864Z"},
+            {"stateName": "SHIPMENT_X", "setAt": "2026-07-10T09:00:00.000Z"},
+        ]
+    }
+    history = build_history(raw)
+    assert [e["timestamp"] for e in history] == [
+        "2026-07-10T09:00:00.000Z",
+        "2026-07-10T17:46:17.864Z",
+    ]
+    assert history[0]["status"] is None  # unmapped -> null, not a guess
+    assert history[1]["status"] == ParcelStatus.DELIVERED
+
+
+def test_build_history_ignores_junk_entries_and_caps_the_list():
+    raw = {"deliveryAttempts": ["not-a-dict", {"stateName": "X"}, {"setAt": ""}]}
+    assert build_history(raw) == []
+    many = {
+        "deliveryAttempts": [
+            {"stateName": "X", "setAt": f"2026-07-10T{h:02d}:00:00.000Z"}
+            for h in range(23)
+        ]
+    }
+    assert len(build_history(many, max_events=20)) == 20
+
+
+def test_build_history_handles_a_payload_without_attempts():
+    assert build_history({}) == []
+    assert build_history(None) == []
 
 
 # --- status mapping --------------------------------------------------------
@@ -211,7 +289,7 @@ async def test_delivered_filter_by_days_keeps_unparseable(hass):
 
 async def test_update_fetches_each_tracked_pair(hass):
     client = AsyncMock()
-    client.async_get_parcel = AsyncMock(return_value=_PAYLOAD)
+    client.async_get_parcel = AsyncMock(return_value={})
     entry = _entry(
         hass,
         parcels=[
@@ -231,7 +309,7 @@ async def test_update_fetches_each_tracked_pair(hass):
 async def test_update_keeps_parcel_visible_when_a_fetch_fails(hass):
     """A transient failure must not make the parcel's sensor disappear."""
     client = AsyncMock()
-    client.async_get_parcel = AsyncMock(return_value=_PAYLOAD)
+    client.async_get_parcel = AsyncMock(return_value=IN_TRANSIT)
     entry = _entry(hass)
     coordinator = _coordinator(hass, client, entry)
 
@@ -240,7 +318,7 @@ async def test_update_keeps_parcel_visible_when_a_fetch_fails(hass):
     data = await coordinator._async_update_data()
 
     assert [p["barcode"] for p in data] == ["TR123"]
-    assert data[0]["raw"] == _PAYLOAD  # served from cache
+    assert data[0]["raw"] == IN_TRANSIT  # served from cache
 
 
 async def test_update_reports_auth_failure_clearly(hass, caplog):
@@ -316,7 +394,7 @@ async def test_events_are_suppressed_on_the_first_refresh(hass):
 
 async def test_registered_event_fires_for_a_new_barcode(hass):
     client = AsyncMock()
-    client.async_get_parcel = AsyncMock(return_value=_PAYLOAD)
+    client.async_get_parcel = AsyncMock(return_value={})
     entry = _entry(hass)
     coordinator = _coordinator(hass, client, entry)
 

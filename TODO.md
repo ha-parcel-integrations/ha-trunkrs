@@ -1,87 +1,61 @@
-# TODO — finish the payload mapping
+# TODO — remaining work
 
-Everything in this integration is built **except** the part that reads fields
-out of the Trunkrs response. This file is the exact ask.
+The original blocker (no known response shape) is **closed**: @joerimul
+contributed a real delivered-parcel payload in
+[#1](https://github.com/ha-parcel-integrations/ha-trunkrs/issues/1), and the
+field mapping is implemented and tested. Full sample and mapping table:
+`docs/api/tracing_details.md` (local-only, gitignored).
 
-## What is already proven
+## 1. Status vocabulary — the one real gap
 
-Live-probed against `api.trunkrs.app/v2`:
+`_STATUS_MAP` in `coordinator.py` holds **one confirmed value**:
 
-- **Auth works**: HTTP Basic, username = Trunkrs number, password = receiver
-  postcode. One credential pair identifies one parcel.
-- **`GET /tracing/verify`** returns 200 for a valid pair, 401 for an invalid
-  one — already wired into the config flow and the `track_parcel` service.
-- **`GET /tracing/details`** is the tracking payload; it answers 401 without
-  valid credentials, so the route and the auth scheme are confirmed.
+| `currentState.stateName` | Canonical |
+|---|---|
+| `SHIPMENT_DELIVERED` | `delivered` |
 
-## What is missing
+Everything else maps to `unknown` and logs a one-shot warning with a
+copy-paste issue link. The remaining `SHIPMENT_*` names are deliberately not
+guessed — a wrong guess silently reports the wrong status, while `unknown` is
+honest and self-collecting.
 
-The **body** of a successful `/tracing/details` response. Capturing it needs a
-real Trunkrs parcel, which the maintainer does not have.
+**To close it:** add each confirmed value as users report it. Still needed
+(unconfirmed): pre-announcement, in-transit/sorted, out-for-delivery, and a
+failed/not-delivered state — the payload has a `reasonCode` field that is
+presumably populated for that last one.
 
-Because of that, three things in `coordinator.py` are deliberately left
-unmapped rather than guessed (guessing would produce an integration that looks
-like it works while silently reporting wrong data):
+`deliveryAttempts[]` shares the same vocabulary, so every value added improves
+both the parcel status and the history timeline at once.
 
-| Symbol | State | Needed to fill it |
-|---|---|---|
-| `_STATUS_MAP` | empty dict | the set of raw status values and their meaning |
-| `normalize_parcel` | only `carrier`, `barcode`, `url`, `raw` populated | field names for status, delivered, ETA window, sender/receiver, pickup |
-| `build_history` | returns `[]` | the key holding the event array + per-event field names |
+## 2. Smaller open questions
 
-Everything else — polling, caching, the delivered filter, sorting, all four bus
-events, device triggers, sensors, calendar, button, diagnostics — is complete
-and covered by tests, and starts working the moment the mapping lands.
-
-## How to get the payload
-
-Two routes, easiest first.
-
-### 1. Diagnostics download (preferred)
-
-Anyone who installs this integration with a real parcel can produce it:
-
-1. Add the parcel to the integration.
-2. **Settings → Devices & services → Trunkrs → ⋮ → Download diagnostics**.
-3. Read the file and strip anything personal that survived redaction (see the
-   warning below), then attach it to an issue.
-
-The untouched payload sits under each parcel's `raw` key.
-
-> **Redaction warning.** `diagnostics.py` redacts a broad list of *commonly
-> used* personal key names, but since the real field names are unknown it
-> cannot be precise. Always read the file before sharing it publicly.
-
-### 2. curl
-
-```
-curl -s -u "<TRUNKRS_NR>:<POSTCODE>" \
-  -H 'Accept: application/json' \
-  https://api.trunkrs.app/v2/tracing/details | python3 -m json.tool
-```
-
-## Also unknown (nice to resolve at the same time)
-
-- **Trunkrs number format.** `config_flow._TRUNKRS_NR_RE` is deliberately
-  permissive (`^[A-Z0-9][A-Z0-9-]{3,29}$`) because we have not seen enough real
-  numbers; the API's own `verify` call does the real validation. Knowing the
-  format would also let us ship an e-mail → `track_parcel` example like the
-  other carriers have.
-- **Deep link.** `TRACKING_URL` is the plain tracking page; no per-parcel
-  deep-link format has been confirmed.
-- **Pickup points.** Unknown whether the payload exposes a ServicePoint. If it
-  does, add the two pickup sensors the GLS integration has (`en_route_to_...`
-  / `awaiting_pickup`) — they were left out on purpose rather than shipped
-  permanently reading zero.
+- **Trunkrs number format.** One sample: `419719666` — 9 digits. Not enough to
+  write an e-mail regex that will not also match order numbers, so this repo
+  ships no `track_parcels_from_email` example yet (GLS and Dragonfly do).
+  `config_flow._TRUNKRS_NR_RE` stays permissive because `/tracing/verify` is
+  the real check.
+- **Tracking deep link.** No confirmed URL format that opens a specific parcel,
+  so `url` points at the plain `https://parcel.trunkrs.nl/` page.
+- **Pickup points.** The payload has no ServicePoint block and Trunkrs is a
+  home-delivery courier, so `pickup` is hard-coded `False` and the GLS
+  template's two pickup sensors were left out rather than shipped permanently
+  reading zero. Revisit only if a payload turns up showing otherwise.
+- **`auditLogs` as a richer history.** Deliberately unused: internal ops text,
+  and every entry carries a `userSub` identifying a driver. Only revisit if
+  `deliveryAttempts` proves too sparse in practice.
+- **Live driver position.** `/tracing/shipment/location` exists, and the
+  payload carries `tourDetails.polyline` / `eta`. A possible out-for-delivery
+  enrichment — but it is location data about a *driver*, so weigh privacy
+  before surfacing any of it.
 - **Countries.** The postcode regex is NL-only. Broaden it if Trunkrs coverage
   elsewhere is confirmed against the same endpoint.
 
-## When the payload arrives
+## 3. Before a 1.0
 
-1. Fill `_STATUS_MAP` and the marked sections of `normalize_parcel` /
-   `build_history`.
-2. Replace the placeholder payload in the tests with the real sample, and add
-   the status-mapping assertions the other carriers have.
-3. Drop the "preview release" banner from `README.md`, bump to `1.0.0`.
-4. Add `trunkrs` to the aggregator's `KNOWN_CARRIERS` +
-   `CARRIER_EVENT_PREFIXES` so it slots into the combined sensors and calendar.
+- No release has been tagged yet; the integration installs via HACS as a custom
+  repository.
+- Once the status vocabulary is reasonably complete, drop the "early release"
+  banner from `README.md` and cut `1.0.0`.
+- Add `trunkrs` to the aggregator's `KNOWN_CARRIERS` +
+  `CARRIER_EVENT_PREFIXES` so it slots into the combined sensors, calendar and
+  unified event stream.

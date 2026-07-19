@@ -18,7 +18,7 @@ from custom_components.trunkrs.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 
-_PAYLOAD = {"unknownField": "value", "name": "Jane Doe", "postalCode": "1234AB"}
+from .payloads import IN_TRANSIT as _PAYLOAD
 _GET = "custom_components.trunkrs.api.TrunkrsApiClient.async_get_parcel"
 
 
@@ -61,10 +61,13 @@ async def test_per_parcel_sensor_reports_unknown_until_mapped(hass):
     assert state.attributes["barcode"] == "TR123456"
 
 
-async def test_next_delivery_is_unknown_without_an_eta(hass):
+async def test_next_delivery_reports_the_promised_window_start(hass):
+    """Before the tour is planned only timeSlot.low/high exist — use those."""
     await _setup(hass)
-    # planned_from is None until the payload is mapped.
-    assert hass.states.get("sensor.trunkrs_1234ab_next_delivery").state == "unknown"
+    assert (
+        hass.states.get("sensor.trunkrs_1234ab_next_delivery").state
+        == "2026-07-10T15:00:00+00:00"
+    )
 
 
 async def test_summary_sensor_exposes_the_parcel_list(hass):
@@ -133,18 +136,19 @@ async def test_diagnostics_preserve_the_raw_payload(hass):
     diag = await async_get_config_entry_diagnostics(hass, entry)
 
     assert diag["counts"] == {"incoming_active": 1, "delivered": 0}
-    assert "unknownField" in diag["incoming"][0]["raw"]
+    assert "shipmentFeatures" in diag["incoming"][0]["raw"]
     # The sharing note must point users at the issue tracker.
     assert "issues/new" in diag["note"]
 
 
 async def test_diagnostics_redact_personal_fields(hass):
-    """Redaction is best-effort on common key names — verify it does fire."""
+    """Personal fields, third-party (neighbour) and driver data must be redacted."""
     entry = await _setup(hass)
     diag = await async_get_config_entry_diagnostics(hass, entry)
 
     raw = diag["incoming"][0]["raw"]
-    assert raw["name"] == "**REDACTED**"
-    assert raw["postalCode"] == "**REDACTED**"
+    assert raw["recipientName"] == "**REDACTED**"
+    assert raw["recipientLocation"] == "**REDACTED**"
+    assert raw["auditLogs"] == "**REDACTED**"
     # our own stored credentials too
     assert diag["entry_options"]["postal_code"] == "**REDACTED**"
