@@ -1,5 +1,5 @@
 name: 🏷️ Unrecognised parcel status
-description: The integration logged a warning asking you to report an unrecognised status or event.
+description: The integration logged a warning about a status it does not know yet.
 title: "[status] "
 labels: ["unrecognised-status"]
 assignees:
@@ -8,25 +8,42 @@ body:
   - type: markdown
     attributes:
       value: |
-        The integration logs a line such as
-        `[parcel] status.description=… (code …) → reported as 'unknown'` or
-        `[history] eventType=… text=… → reported as 'unknown'`.
-        Paste that full line below and we'll add it to the mapping.
+        Trunkrs reports a parcel's state as a `SHIPMENT_*` name. Only
+        `SHIPMENT_DELIVERED` is confirmed so far, so anything else is reported
+        as `unknown` rather than guessed — and logs a warning like:
+
+        ```
+        Unrecognised Trunkrs status — help us map it. Open an issue and paste
+        this line: …
+          status='SHIPMENT_SOMETHING' → reported as 'unknown'
+        ```
+
+        Paste that line below and it gets mapped. **No personal data is
+        involved** — just the status name.
   - type: textarea
     id: logline
     attributes:
       label: The log line
-      description: Copy the full "help us map it" warning line from your Home Assistant log.
+      description: Copy the full "help us map it" warning from your Home Assistant log.
       render: text
+    validations:
+      required: true
+  - type: input
+    id: actual_state
+    attributes:
+      label: What was the parcel actually doing at that moment?
+      description: |
+        This is the important part — the status name alone does not tell us
+        what it means. E.g. "still at the depot", "driver was on the way",
+        "delivery failed, nobody home", "announced but not collected yet".
+      placeholder: "e.g. out for delivery — the app showed a driver en route"
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: Integration version
-      placeholder: "e.g. 2.4.0"
-    validations:
-      required: true
+      placeholder: "e.g. 0.1.0"
   - type: input
     id: ha_version
     attributes:

@@ -84,5 +84,10 @@ DEFAULT_INCLUDE_HISTORY = False
 # stays well under HA's ~16 KB state-attribute limit.
 HISTORY_MAX_EVENTS = 20
 
-# Surfaced in the "help us map the payload" warning and in the docs.
-NEW_ISSUE_URL = "https://github.com/ha-parcel-integrations/ha-trunkrs/issues/new"
+# Surfaced in the "unrecognised status" warning. Points at the pre-filled issue
+# template rather than a blank form, so a user who follows the link from their
+# log lands somewhere that already asks the right questions.
+NEW_ISSUE_URL = (
+    "https://github.com/ha-parcel-integrations/ha-trunkrs/issues/new"
+    "?template=unrecognised_status.yml"
+)
