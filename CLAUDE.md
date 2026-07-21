@@ -128,6 +128,17 @@ Trunkrs is a **code-based** carrier (no inbox), so it follows the GLS shape:
   `_attr_name`, no `_attr_icon`, no `_attr_native_unit_of_measurement`.
 - One-line commit messages.
 
+## Shared conventions
+
+Workflow, commit style, versioning and release notes live in
+[`ha-parcel-integrations/.github/CONVENTIONS.md`](https://github.com/ha-parcel-integrations/.github/blob/main/CONVENTIONS.md)
+and are not repeated here. In short: single-line commit messages, semver, tags
+without a `v` prefix, maintainer-only merges, user-facing release notes.
+
+The structural baseline every carrier repo shares is the
+[`ha-carrier-template`](https://github.com/ha-parcel-integrations/ha-carrier-template)
+scaffold. One deliberate divergence: Trunkrs keys hubs on **postal code**, so `single_config_entry` is intentionally absent and several hubs are legitimate.
+
 ## Running tests
 
 ```
