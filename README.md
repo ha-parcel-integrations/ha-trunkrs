@@ -100,7 +100,7 @@ Third-party cards that work with this integration's sensors:
 
 ## Related integrations
 
-This integration is part of [**ha-parcel-integrations**](https://github.com/ha-parcel-integrations) — a family of Dutch
+This integration is part of [**ha-parcel-integrations**](https://github.com/ha-parcel-integrations) — a family of
 parcel-carrier integrations that all publish the same canonical parcel format,
 statuses and events.
 
