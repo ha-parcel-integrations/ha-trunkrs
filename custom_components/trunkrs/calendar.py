@@ -12,7 +12,7 @@ from homeassistant.util import dt as dt_util
 
 from . import TrunkrsConfigEntry
 from .coordinator import TrunkrsCoordinator
-from .sensor import build_device_info
+from .device import build_device_info
 
 PARALLEL_UPDATES = 0
 

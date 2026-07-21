@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TrunkrsConfigEntry
-from .sensor import build_device_info
+from .device import build_device_info
 
 # A manual refresh is a single API round-trip per tracked parcel; HA's
 # per-entity throttling adds nothing here.
