@@ -19,6 +19,7 @@ from custom_components.trunkrs.diagnostics import (
 )
 
 from .payloads import IN_TRANSIT as _PAYLOAD
+
 _GET = "custom_components.trunkrs.api.TrunkrsApiClient.async_get_parcel"
 
 

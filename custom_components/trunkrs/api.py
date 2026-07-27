@@ -20,6 +20,7 @@ class TrunkrsApiError(Exception):
     """Raised when a Trunkrs API call returns an unexpected status."""
 
     def __init__(self, status_code: int) -> None:
+        """Store the status code that triggered the error."""
         super().__init__(f"Trunkrs API request failed with status {status_code}")
         self.status_code = status_code
 

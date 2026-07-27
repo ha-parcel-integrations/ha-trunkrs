@@ -5,7 +5,7 @@ Like the calendar, these paths are payload-independent: they operate on
 coordinator directly.
 """
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry

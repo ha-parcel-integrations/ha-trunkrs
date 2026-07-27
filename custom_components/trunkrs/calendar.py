@@ -61,6 +61,7 @@ class TrunkrsDeliveriesCalendar(
     _attr_attribution = "Data provided by Trunkrs"
 
     def __init__(self, coordinator: TrunkrsCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the calendar."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_deliveries"
         self._attr_device_info = build_device_info(entry)
@@ -100,6 +101,7 @@ class TrunkrsDeliveriesCalendar(
 
     @property
     def event(self) -> CalendarEvent | None:
+        """Return the next upcoming calendar event."""
         now = dt_util.now()
         upcoming = [event for event in self._events() if event.end > now]
         return min(upcoming, key=lambda event: event.start) if upcoming else None
@@ -110,6 +112,7 @@ class TrunkrsDeliveriesCalendar(
         start_date: datetime,
         end_date: datetime,
     ) -> list[CalendarEvent]:
+        """Return calendar events within a datetime range."""
         return [
             event
             for event in self._events()

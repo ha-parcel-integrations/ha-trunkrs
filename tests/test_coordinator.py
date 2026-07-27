@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.trunkrs.api import TrunkrsApiError, TrunkrsAuthError
 from custom_components.trunkrs.const import (
