@@ -1,7 +1,12 @@
 track_parcel:
   fields:
-    trunkrs_nr:
+    tracking_code:
       required: true
+      example: "TR123456789"
+      selector:
+        text:
+    trunkrs_nr:
+      required: false
       example: "TR123456789"
       selector:
         text:
@@ -13,8 +18,13 @@ track_parcel:
 
 untrack_parcel:
   fields:
-    trunkrs_nr:
+    tracking_code:
       required: true
+      example: "TR123456789"
+      selector:
+        text:
+    trunkrs_nr:
+      required: false
       example: "TR123456789"
       selector:
         text:

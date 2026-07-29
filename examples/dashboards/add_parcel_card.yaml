@@ -1,8 +1,8 @@
 # Add a Trunkrs parcel straight from a dashboard — no diving into the options.
 #
 # The integration exposes two services:
-#   - trunkrs.track_parcel   (trunkrs_nr, optional postal_code)
-#   - trunkrs.untrack_parcel (trunkrs_nr)
+#   - trunkrs.track_parcel   (tracking_code, optional postal_code)
+#   - trunkrs.untrack_parcel (tracking_code)
 #
 # This example wires a text field + a button on a Lovelace card to
 # trunkrs.track_parcel. It needs one helper and one script (below), then the card.
@@ -27,7 +27,7 @@ trunkrs_track_new_parcel:
       value_template: "{{ states('input_text.trunkrs_new_parcel') | trim != '' }}"
     - action: trunkrs.track_parcel
       data:
-        trunkrs_nr: "{{ states('input_text.trunkrs_new_parcel') | trim }}"
+        tracking_code: "{{ states('input_text.trunkrs_new_parcel') | trim }}"
         # Omit postal_code to use the hub default, or set your own:
         # postal_code: "1234AB"
     - action: input_text.set_value

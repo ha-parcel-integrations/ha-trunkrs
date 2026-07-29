@@ -8,6 +8,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.trunkrs.const import (
     CONF_PARCELS,
     CONF_POSTAL_CODE,
+    CONF_TRACKING_CODE,
     CONF_TRUNKRS_NR,
     DOMAIN,
 )
@@ -143,3 +144,27 @@ async def test_untrack_without_a_hub_raises(hass):
     async_setup_services(hass)
     with pytest.raises(ServiceValidationError):
         await _call(hass, SERVICE_UNTRACK_PARCEL, {CONF_TRUNKRS_NR: "TR123456"})
+
+
+# The tests above call the services with the deprecated ``trunkrs_nr`` field,
+# which keeps working via the alias. The two below cover the new standard
+# ``tracking_code`` field and the "neither field given" error.
+
+
+async def test_track_accepts_tracking_code(hass):
+    entry = _entry(hass)
+    async_setup_services(hass)
+
+    with patch(_VERIFY, new=AsyncMock(return_value=True)):
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "tr123456"})
+
+    assert entry.options[CONF_PARCELS] == [
+        {CONF_TRUNKRS_NR: "TR123456", CONF_POSTAL_CODE: "1234AB"}
+    ]
+
+
+async def test_track_requires_a_code(hass):
+    _entry(hass)
+    async_setup_services(hass)
+    with pytest.raises(ServiceValidationError):
+        await _call(hass, SERVICE_TRACK_PARCEL, {})

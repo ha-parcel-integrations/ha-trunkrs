@@ -7,6 +7,8 @@ a parcel straight away.
 """
 from __future__ import annotations
 
+import logging
+
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
@@ -19,18 +21,64 @@ from .config_flow import (
     valid_postcode,
     valid_trunkrs_nr,
 )
-from .const import CONF_PARCELS, CONF_POSTAL_CODE, CONF_TRUNKRS_NR, DOMAIN
+from .const import (
+    CONF_PARCELS,
+    CONF_POSTAL_CODE,
+    CONF_TRACKING_CODE,
+    CONF_TRUNKRS_NR,
+    DOMAIN,
+)
+
+_LOGGER = logging.getLogger(__name__)
 
 SERVICE_TRACK_PARCEL = "track_parcel"
 SERVICE_UNTRACK_PARCEL = "untrack_parcel"
 
+# ``tracking_code`` is the standard field across every parcel-suite carrier.
+# ``trunkrs_nr`` is a deprecated alias kept working for backwards compatibility
+# and will be removed in a future release; both are optional at the schema
+# level and ``_resolve_code`` requires exactly one.
 _TRACK_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_TRUNKRS_NR): cv.string,
+        vol.Optional(CONF_TRACKING_CODE): cv.string,
+        vol.Optional(CONF_TRUNKRS_NR): cv.string,
         vol.Optional(CONF_POSTAL_CODE): cv.string,
     }
 )
-_UNTRACK_SCHEMA = vol.Schema({vol.Required(CONF_TRUNKRS_NR): cv.string})
+_UNTRACK_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_TRACKING_CODE): cv.string,
+        vol.Optional(CONF_TRUNKRS_NR): cv.string,
+    }
+)
+
+# One-shot so the deprecation is logged once per HA session, not per call.
+_trunkrs_nr_deprecation_logged = False
+
+
+def _resolve_code(call: ServiceCall) -> str:
+    """Return the tracking code from a service call.
+
+    Accepts the standard ``tracking_code`` field or the deprecated
+    ``trunkrs_nr`` alias. Using ``trunkrs_nr`` logs a one-shot deprecation
+    warning; passing neither raises.
+    """
+    global _trunkrs_nr_deprecation_logged
+    code = call.data.get(CONF_TRACKING_CODE)
+    if code is None:
+        code = call.data.get(CONF_TRUNKRS_NR)
+        if code is not None and not _trunkrs_nr_deprecation_logged:
+            _trunkrs_nr_deprecation_logged = True
+            _LOGGER.warning(
+                "The '%s' field of the Trunkrs %s service is deprecated and "
+                "will be removed in a future release — use '%s' instead.",
+                CONF_TRUNKRS_NR,
+                call.service,
+                CONF_TRACKING_CODE,
+            )
+    if code is None:
+        raise ServiceValidationError(f"'{CONF_TRACKING_CODE}' is required")
+    return code
 
 
 def _resolve_entry(hass: HomeAssistant, postal_code: str | None):
@@ -61,7 +109,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         return
 
     async def _track(call: ServiceCall) -> None:
-        trunkrs_nr = normalize_trunkrs_nr(call.data[CONF_TRUNKRS_NR])
+        trunkrs_nr = normalize_trunkrs_nr(_resolve_code(call))
         if not valid_trunkrs_nr(trunkrs_nr):
             raise ServiceValidationError(
                 f"'{trunkrs_nr}' is not a valid Trunkrs number"
@@ -92,7 +140,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         )
 
     async def _untrack(call: ServiceCall) -> None:
-        trunkrs_nr = normalize_trunkrs_nr(call.data[CONF_TRUNKRS_NR])
+        trunkrs_nr = normalize_trunkrs_nr(_resolve_code(call))
         entries = hass.config_entries.async_entries(DOMAIN)
         if not entries:
             raise ServiceValidationError("Trunkrs is not set up")

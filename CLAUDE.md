@@ -47,6 +47,12 @@ Reverse-engineered from the `parcel.trunkrs.nl` consumer tracking SPA.
   postcode. There is no account, no token, no API key: **one credential pair
   identifies exactly one parcel**. That is why tracked parcels are stored as
   `{trunkrs_nr, postal_code}` pairs and the auth header is built per request.
+- **Service field is `tracking_code`** (`CONF_TRACKING_CODE`), the suite-wide
+  standard shared by every carrier. The old **`trunkrs_nr` field is a deprecated
+  alias** — `_resolve_code` in `services.py` accepts either, logs a one-shot
+  deprecation warning when `trunkrs_nr` is used, and **is to be removed in a
+  future release**. Note the *stored* dict key stays `trunkrs_nr`
+  (`CONF_TRUNKRS_NR`) — only the service field was renamed; do not conflate them.
 - **`GET /tracing/verify`** → 200 valid / 401 invalid. Used to validate before
   storing a parcel — a capability GLS does not have, so unlike GLS this
   integration rejects typos up front.

@@ -13,8 +13,8 @@ All examples assume a single Trunkrs hub. Adjust entity IDs to match yours.
 
 | Service | Description |
 |---|---|
-| `trunkrs.track_parcel` | Start tracking a parcel (`trunkrs_nr`, optional `postal_code`). |
-| `trunkrs.untrack_parcel` | Stop tracking a parcel (`trunkrs_nr`). |
+| `trunkrs.track_parcel` | Start tracking a parcel (`tracking_code`, optional `postal_code`). |
+| `trunkrs.untrack_parcel` | Stop tracking a parcel (`tracking_code`). |
 
 ## Events used in the examples
 

@@ -59,6 +59,10 @@ TRACKING_URL = "https://parcel.trunkrs.nl/"
 CONF_PARCELS = "parcels"
 CONF_TRUNKRS_NR = "trunkrs_nr"
 CONF_POSTAL_CODE = "postal_code"
+# Standard service field name shared by every parcel-suite carrier. Trunkrs's
+# services accept ``tracking_code``; the old ``trunkrs_nr`` field is a
+# deprecated alias (see services.py) kept working for now and removed soon.
+CONF_TRACKING_CODE = "tracking_code"
 
 # Delivered-parcels retention: keep delivered parcels visible for the last N
 # days, or keep only the N most recent — mirrors the other suite carriers.

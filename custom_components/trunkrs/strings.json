@@ -96,9 +96,13 @@
       "name": "Track parcel",
       "description": "Start tracking a Trunkrs parcel by its number.",
       "fields": {
-        "trunkrs_nr": {
-          "name": "Trunkrs number",
+        "tracking_code": {
+          "name": "Tracking code",
           "description": "The Trunkrs number of the parcel."
+        },
+        "trunkrs_nr": {
+          "name": "Trunkrs number (deprecated)",
+          "description": "Deprecated — use 'Tracking code' instead. Will be removed in a future release."
         },
         "postal_code": {
           "name": "Postal code",
@@ -110,9 +114,13 @@
       "name": "Untrack parcel",
       "description": "Stop tracking a Trunkrs parcel by its number.",
       "fields": {
-        "trunkrs_nr": {
-          "name": "Trunkrs number",
+        "tracking_code": {
+          "name": "Tracking code",
           "description": "The Trunkrs number to stop tracking."
+        },
+        "trunkrs_nr": {
+          "name": "Trunkrs number (deprecated)",
+          "description": "Deprecated — use 'Tracking code' instead. Will be removed in a future release."
         }
       }
     }

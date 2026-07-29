@@ -96,9 +96,13 @@
       "name": "Pakket volgen",
       "description": "Begin met het volgen van een Trunkrs-pakket op nummer.",
       "fields": {
-        "trunkrs_nr": {
-          "name": "Trunkrs-nummer",
+        "tracking_code": {
+          "name": "Trackingcode",
           "description": "Het Trunkrs-nummer van het pakket."
+        },
+        "trunkrs_nr": {
+          "name": "Trunkrs-nummer (verouderd)",
+          "description": "Verouderd — gebruik 'Trackingcode'. Wordt in een volgende release verwijderd."
         },
         "postal_code": {
           "name": "Postcode",
@@ -110,9 +114,13 @@
       "name": "Pakket niet meer volgen",
       "description": "Stop met het volgen van een Trunkrs-pakket op nummer.",
       "fields": {
-        "trunkrs_nr": {
-          "name": "Trunkrs-nummer",
+        "tracking_code": {
+          "name": "Trackingcode",
           "description": "Het Trunkrs-nummer dat je niet meer wilt volgen."
+        },
+        "trunkrs_nr": {
+          "name": "Trunkrs-nummer (verouderd)",
+          "description": "Verouderd — gebruik 'Trackingcode'. Wordt in een volgende release verwijderd."
         }
       }
     }
