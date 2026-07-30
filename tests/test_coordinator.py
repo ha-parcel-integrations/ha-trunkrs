@@ -16,8 +16,8 @@ from custom_components.trunkrs.const import (
     DOMAIN,
     ParcelStatus,
 )
-from custom_components.trunkrs.coordinator import (
-    TrunkrsCoordinator,
+from custom_components.trunkrs.coordinator import TrunkrsCoordinator
+from custom_components.trunkrs.parcels import (
     build_history,
     map_event_status,
     map_parcel_status,
@@ -211,9 +211,9 @@ def test_map_parcel_status_none_is_silently_unknown():
 
 
 def test_map_parcel_status_unmapped_warns_once(caplog):
-    from custom_components.trunkrs import coordinator as coord
+    from custom_components.trunkrs import parcels
 
-    coord._unmapped_statuses_logged.clear()
+    parcels._unmapped_statuses_logged.clear()
     assert map_parcel_status("SOMETHING_NEW") == ParcelStatus.UNKNOWN
     assert map_parcel_status("SOMETHING_NEW") == ParcelStatus.UNKNOWN
     assert caplog.text.count("Unrecognised Trunkrs status") == 1
@@ -228,9 +228,9 @@ def test_map_event_status_returns_none_for_unmapped():
 def test_reason_code_warns_once(caplog):
     """A delivery reasonCode (the failed-state vocabulary we still need) is
     flagged once, with the state:reason pair and an issue link."""
-    from custom_components.trunkrs import coordinator as coord
+    from custom_components.trunkrs import parcels
 
-    coord._reason_code_logged = False
+    parcels._reason_code_logged = False
     raw = {
         "currentState": {"stateName": "SHIPMENT_NOT_DELIVERED", "reasonCode": "NOBODY_HOME"},
         "deliveryAttempts": [],
@@ -244,9 +244,9 @@ def test_reason_code_warns_once(caplog):
 
 def test_reason_code_absent_is_silent(caplog):
     """A payload without a reasonCode logs nothing."""
-    from custom_components.trunkrs import coordinator as coord
+    from custom_components.trunkrs import parcels
 
-    coord._reason_code_logged = False
+    parcels._reason_code_logged = False
     normalize_parcel(DELIVERED, trunkrs_nr="TR123")
     assert "delivery reasonCode" not in caplog.text
 
