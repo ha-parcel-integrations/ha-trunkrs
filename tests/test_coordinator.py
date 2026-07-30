@@ -225,6 +225,32 @@ def test_map_event_status_returns_none_for_unmapped():
     assert map_event_status("SOMETHING_NEW") is None
 
 
+def test_reason_code_warns_once(caplog):
+    """A delivery reasonCode (the failed-state vocabulary we still need) is
+    flagged once, with the state:reason pair and an issue link."""
+    from custom_components.trunkrs import coordinator as coord
+
+    coord._reason_code_logged = False
+    raw = {
+        "currentState": {"stateName": "SHIPMENT_NOT_DELIVERED", "reasonCode": "NOBODY_HOME"},
+        "deliveryAttempts": [],
+    }
+    normalize_parcel(raw, trunkrs_nr="TR123")
+    normalize_parcel(raw, trunkrs_nr="TR123")
+    assert caplog.text.count("delivery reasonCode we have not mapped") == 1
+    assert "SHIPMENT_NOT_DELIVERED:NOBODY_HOME" in caplog.text
+    assert "issues/new" in caplog.text
+
+
+def test_reason_code_absent_is_silent(caplog):
+    """A payload without a reasonCode logs nothing."""
+    from custom_components.trunkrs import coordinator as coord
+
+    coord._reason_code_logged = False
+    normalize_parcel(DELIVERED, trunkrs_nr="TR123")
+    assert "delivery reasonCode" not in caplog.text
+
+
 # --- sorting ---------------------------------------------------------------
 
 

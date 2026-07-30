@@ -77,6 +77,41 @@ def _warn_unmapped_status(raw_status: str) -> None:
     )
 
 
+# The failed / not-delivered vocabulary is unconfirmed — only SHIPMENT_DELIVERED
+# has been observed, and the payload's ``reasonCode`` is presumably populated for
+# a failed attempt (see TODO.md). We have never seen one, so the first
+# ``reasonCode`` we encounter — on the current state or a delivery attempt — is
+# logged once so a tester can report the failed-state vocabulary. A reasonCode is
+# a code (e.g. NOBODY_HOME), not personal data. See NEW_ISSUE_URL.
+_reason_code_logged = False
+
+
+def _note_reason_code(raw: dict) -> None:
+    """One-shot: report a delivery reasonCode we have not mapped yet."""
+    global _reason_code_logged
+    if _reason_code_logged:
+        return
+    sources = [raw.get("currentState") or {}]
+    sources += [a for a in (raw.get("deliveryAttempts") or []) if isinstance(a, dict)]
+    seen = sorted(
+        {
+            f"{s.get('stateName')}:{s.get('reasonCode')}"
+            for s in sources
+            if isinstance(s, dict) and s.get("reasonCode")
+        }
+    )
+    if not seen:
+        return
+    _reason_code_logged = True
+    _LOGGER.warning(
+        "Trunkrs reported a delivery reasonCode we have not mapped yet "
+        "(state:reason=%s) — this is the failed/not-delivered vocabulary we "
+        "still need. Please report it, a diagnostics file is ideal: %s",
+        seen,
+        NEW_ISSUE_URL,
+    )
+
+
 def map_parcel_status(raw_status: str | None) -> ParcelStatus:
     """Map a raw Trunkrs status to a canonical :class:`ParcelStatus`.
 
@@ -197,6 +232,7 @@ def normalize_parcel(
       *preferences* (mailbox, leave with neighbour), not a pickup location, so
       they deliberately do not set it.
     """
+    _note_reason_code(raw)
     state = raw.get("currentState") or {}
     raw_status = state.get("stateName")
     delivered = raw_status == STATE_DELIVERED
