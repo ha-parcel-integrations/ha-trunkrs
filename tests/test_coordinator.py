@@ -8,12 +8,14 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.trunkrs.api import TrunkrsApiError, TrunkrsAuthError
 from custom_components.trunkrs.const import (
+    CAPABILITIES,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_PARCELS,
     CONF_POSTAL_CODE,
     CONF_TRUNKRS_NR,
     DOMAIN,
+    KNOWN_CAPABILITIES,
     ParcelStatus,
 )
 from custom_components.trunkrs.coordinator import TrunkrsCoordinator
@@ -443,3 +445,13 @@ async def test_registered_event_fires_for_a_new_barcode(hass):
 
     assert [e.data["barcode"] for e in events] == ["TR999"]
     assert "device_id" in events[0].data
+
+
+def test_capabilities_are_known_values():
+    """A typo here would silently misreport this carrier on the docs site."""
+    assert CAPABILITIES <= KNOWN_CAPABILITIES
+
+
+def test_capabilities_are_delivery_window_url_and_history():
+    """Home-delivery courier: no pickup point, weight or dimensions in the payload."""
+    assert CAPABILITIES == {"delivery_window", "url", "history"}
