@@ -35,47 +35,22 @@ SERVICE_TRACK_PARCEL = "track_parcel"
 SERVICE_UNTRACK_PARCEL = "untrack_parcel"
 
 # ``tracking_code`` is the standard field across every parcel-suite carrier.
-# ``trunkrs_nr`` is a deprecated alias kept working for backwards compatibility
-# and will be removed in a future release; both are optional at the schema
-# level and ``_resolve_code`` requires exactly one.
 _TRACK_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_TRACKING_CODE): cv.string,
-        vol.Optional(CONF_TRUNKRS_NR): cv.string,
         vol.Optional(CONF_POSTAL_CODE): cv.string,
     }
 )
 _UNTRACK_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_TRACKING_CODE): cv.string,
-        vol.Optional(CONF_TRUNKRS_NR): cv.string,
     }
 )
 
-# One-shot so the deprecation is logged once per HA session, not per call.
-_trunkrs_nr_deprecation_logged = False
-
 
 def _resolve_code(call: ServiceCall) -> str:
-    """Return the tracking code from a service call.
-
-    Accepts the standard ``tracking_code`` field or the deprecated
-    ``trunkrs_nr`` alias. Using ``trunkrs_nr`` logs a one-shot deprecation
-    warning; passing neither raises.
-    """
-    global _trunkrs_nr_deprecation_logged
+    """Return the tracking code from a service call, or raise if absent."""
     code = call.data.get(CONF_TRACKING_CODE)
-    if code is None:
-        code = call.data.get(CONF_TRUNKRS_NR)
-        if code is not None and not _trunkrs_nr_deprecation_logged:
-            _trunkrs_nr_deprecation_logged = True
-            _LOGGER.warning(
-                "The '%s' field of the Trunkrs %s service is deprecated and "
-                "will be removed in a future release — use '%s' instead.",
-                CONF_TRUNKRS_NR,
-                call.service,
-                CONF_TRACKING_CODE,
-            )
     if code is None:
         raise ServiceValidationError(f"'{CONF_TRACKING_CODE}' is required")
     return code

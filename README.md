@@ -55,11 +55,6 @@ data:
 `trunkrs.untrack_parcel` stops tracking it again. Numbers are checked with
 Trunkrs before they are stored, so a typo is rejected straight away.
 
-> The field was renamed from `trunkrs_nr` to `tracking_code` for consistency
-> across the parcel-integration family. The old `trunkrs_nr` field still works
-> but is **deprecated** and will be removed in a future release — update your
-> automations to `tracking_code`.
-
 **Tip:** other integrations in the family feed this action straight from your
 mailbox (core IMAP integration + a regex on shipping mails). The same pattern
 works here, but a ready-made example is not shipped yet: we do not know the

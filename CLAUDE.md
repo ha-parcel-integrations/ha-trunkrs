@@ -51,10 +51,10 @@ the payload→canonical mapping. Do not duplicate them here.
   `track_parcel`/`untrack_parcel` services, a dashboard button). Option changes
   apply **live** via an options update listener that refreshes the coordinator
   (**not** a reload — avoids the config-entry-listener deprecation).
-- **Service field is `tracking_code`** (suite standard); the old `trunkrs_nr` field
-  is a **deprecated alias** (`_resolve_code` accepts either, one-shot deprecation
-  warning, **to be removed**). The *stored* dict key stays `trunkrs_nr` — only the
-  service field was renamed; don't conflate them.
+- **Service field is `tracking_code`** (suite standard). The old `trunkrs_nr`
+  service-field alias was removed (#2). The *stored* dict key stays `trunkrs_nr` —
+  that's an internal storage key, not the service field, and was never part of
+  the deprecation; don't conflate them.
 - **`TrunkrsAuthError` is split from `TrunkrsApiError`**: a 401/403 means the
   number/postcode pair is wrong (user-fixable); anything else is an outage
   (retryable). Do not collapse them.

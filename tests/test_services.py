@@ -40,7 +40,7 @@ async def test_track_adds_a_verified_parcel(hass):
     async_setup_services(hass)
 
     with patch(_VERIFY, new=AsyncMock(return_value=True)):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "tr123456"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "tr123456"})
 
     assert entry.options[CONF_PARCELS] == [
         {CONF_TRUNKRS_NR: "TR123456", CONF_POSTAL_CODE: "1234AB"}
@@ -53,7 +53,7 @@ async def test_track_rejects_a_parcel_trunkrs_does_not_know(hass):
 
     with patch(_VERIFY, new=AsyncMock(return_value=False)):
         with pytest.raises(ServiceValidationError):
-            await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "TR999999"})
+            await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR999999"})
 
 
 async def test_track_accepts_when_trunkrs_is_unreachable(hass):
@@ -62,7 +62,7 @@ async def test_track_accepts_when_trunkrs_is_unreachable(hass):
     async_setup_services(hass)
 
     with patch(_VERIFY, new=AsyncMock(return_value=None)):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "TR123456"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR123456"})
 
     assert len(entry.options[CONF_PARCELS]) == 1
 
@@ -75,7 +75,7 @@ async def test_track_is_a_noop_for_an_already_tracked_parcel(hass):
 
     # Must not even reach the verify call.
     with patch(_VERIFY, new=AsyncMock(side_effect=AssertionError("should not verify"))):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "TR123456"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR123456"})
 
     assert len(entry.options[CONF_PARCELS]) == 1
 
@@ -84,13 +84,13 @@ async def test_track_rejects_an_invalid_number(hass):
     _entry(hass)
     async_setup_services(hass)
     with pytest.raises(ServiceValidationError):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "!!"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "!!"})
 
 
 async def test_track_without_a_hub_raises(hass):
     async_setup_services(hass)
     with pytest.raises(ServiceValidationError):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "TR123456"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR123456"})
 
 
 async def test_track_selects_the_hub_by_postal_code(hass):
@@ -102,7 +102,7 @@ async def test_track_selects_the_hub_by_postal_code(hass):
         await _call(
             hass,
             SERVICE_TRACK_PARCEL,
-            {CONF_TRUNKRS_NR: "TR123456", CONF_POSTAL_CODE: "5678CD"},
+            {CONF_TRACKING_CODE: "TR123456", CONF_POSTAL_CODE: "5678CD"},
         )
 
     assert len(second.options[CONF_PARCELS]) == 1
@@ -114,7 +114,7 @@ async def test_track_is_ambiguous_with_several_hubs_and_no_postcode(hass):
     async_setup_services(hass)
 
     with pytest.raises(ServiceValidationError):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRUNKRS_NR: "TR123456"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR123456"})
 
 
 async def test_track_with_an_unknown_postcode_raises(hass):
@@ -125,7 +125,7 @@ async def test_track_with_an_unknown_postcode_raises(hass):
         await _call(
             hass,
             SERVICE_TRACK_PARCEL,
-            {CONF_TRUNKRS_NR: "TR123456", CONF_POSTAL_CODE: "9999ZZ"},
+            {CONF_TRACKING_CODE: "TR123456", CONF_POSTAL_CODE: "9999ZZ"},
         )
 
 
@@ -135,7 +135,7 @@ async def test_untrack_removes_the_parcel(hass):
     )
     async_setup_services(hass)
 
-    await _call(hass, SERVICE_UNTRACK_PARCEL, {CONF_TRUNKRS_NR: "tr123456"})
+    await _call(hass, SERVICE_UNTRACK_PARCEL, {CONF_TRACKING_CODE: "tr123456"})
 
     assert entry.options[CONF_PARCELS] == []
 
@@ -143,24 +143,7 @@ async def test_untrack_removes_the_parcel(hass):
 async def test_untrack_without_a_hub_raises(hass):
     async_setup_services(hass)
     with pytest.raises(ServiceValidationError):
-        await _call(hass, SERVICE_UNTRACK_PARCEL, {CONF_TRUNKRS_NR: "TR123456"})
-
-
-# The tests above call the services with the deprecated ``trunkrs_nr`` field,
-# which keeps working via the alias. The two below cover the new standard
-# ``tracking_code`` field and the "neither field given" error.
-
-
-async def test_track_accepts_tracking_code(hass):
-    entry = _entry(hass)
-    async_setup_services(hass)
-
-    with patch(_VERIFY, new=AsyncMock(return_value=True)):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "tr123456"})
-
-    assert entry.options[CONF_PARCELS] == [
-        {CONF_TRUNKRS_NR: "TR123456", CONF_POSTAL_CODE: "1234AB"}
-    ]
+        await _call(hass, SERVICE_UNTRACK_PARCEL, {CONF_TRACKING_CODE: "TR123456"})
 
 
 async def test_track_requires_a_code(hass):

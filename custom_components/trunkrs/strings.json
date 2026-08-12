@@ -100,10 +100,6 @@
           "name": "Tracking code",
           "description": "The Trunkrs number of the parcel."
         },
-        "trunkrs_nr": {
-          "name": "Trunkrs number (deprecated)",
-          "description": "Deprecated — use 'Tracking code' instead. Will be removed in a future release."
-        },
         "postal_code": {
           "name": "Postal code",
           "description": "Delivery postal code. Picks the hub when several are set up; otherwise defaults to the only hub."
@@ -117,10 +113,6 @@
         "tracking_code": {
           "name": "Tracking code",
           "description": "The Trunkrs number to stop tracking."
-        },
-        "trunkrs_nr": {
-          "name": "Trunkrs number (deprecated)",
-          "description": "Deprecated — use 'Tracking code' instead. Will be removed in a future release."
         }
       }
     }
