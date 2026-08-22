@@ -6,7 +6,7 @@ inbox), built on the GLS/Dragonfly shape. No DTO layer.
 
 ## ⚠️ Read TODO.md first (pre-1.0 status vocabulary)
 
-Field mapping is **done** (`carrier-research/api/trunkrs/tracing_details.md`). What remains is the
+Field mapping is **done** (`carrier-research/trunkrs/api/tracing_details.md`). What remains is the
 **status vocabulary**: `_STATUS_MAP` holds exactly one confirmed value,
 `SHIPMENT_DELIVERED`; everything else reports `unknown` + a one-shot warning. **Do
 not add speculative `SHIPMENT_*` entries** — a wrong guess silently reports the
@@ -28,7 +28,7 @@ you act in one of these areas:
 | consider "fixing" a lint/pattern the skill flags (poll interval, inline client) | *Deliberate skill divergences* |
 | commit, bump, tag, release, or write release notes; add a feature without a test | *Workflow / Commits / Versioning / Testing* |
 
-**API mechanics live in `carrier-research/api/trunkrs/` (private research repo)** — the `.app` base,
+**API mechanics live in `carrier-research/trunkrs/api/` (private research repo)** — the `.app` base,
 the Basic-auth scheme, the `/tracing/verify` and `/tracing/details` endpoints, and
 the payload→canonical mapping. Do not duplicate them here.
 
