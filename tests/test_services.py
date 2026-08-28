@@ -42,9 +42,7 @@ async def test_track_adds_a_verified_parcel(hass):
     with patch(_VERIFY, new=AsyncMock(return_value=True)):
         await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "tr123456"})
 
-    assert entry.options[CONF_PARCELS] == [
-        {CONF_TRUNKRS_NR: "TR123456", CONF_POSTAL_CODE: "1234AB"}
-    ]
+    assert entry.options[CONF_PARCELS] == [{CONF_TRUNKRS_NR: "TR123456"}]
 
 
 async def test_track_rejects_a_parcel_trunkrs_does_not_know(hass):

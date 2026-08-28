@@ -5,6 +5,7 @@ tracked parcel without opening the integration options — so a Lovelace button,
 or an automation that reads tracking numbers out of e-mail, can start tracking
 a parcel straight away.
 """
+
 from __future__ import annotations
 
 import logging
@@ -109,7 +110,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
                 f"'{postal_code}'"
             )
 
-        parcels.append({CONF_TRUNKRS_NR: trunkrs_nr, CONF_POSTAL_CODE: postal_code})
+        parcels.append({CONF_TRUNKRS_NR: trunkrs_nr})
         hass.config_entries.async_update_entry(
             entry, options={**entry.options, CONF_PARCELS: parcels}
         )

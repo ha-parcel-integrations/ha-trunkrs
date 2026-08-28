@@ -1,4 +1,5 @@
 """Coordinator for the Trunkrs parcel tracker integration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -65,9 +66,9 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         # ``None`` on the first refresh so events are suppressed for parcels
         # that already existed when the integration started.
         self._known_state: dict[str, ParcelStatus] | None = None
-        self._known_delivery_times: (
-            dict[str, tuple[str | None, str | None]] | None
-        ) = None
+        self._known_delivery_times: dict[str, tuple[str | None, str | None]] | None = (
+            None
+        )
         # Cached device id, attached to every fired event so device-trigger
         # automations can filter to this Trunkrs device.
         self._cached_device_id: str | None = None
@@ -80,7 +81,9 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
             return self._cached_device_id
         registry = dr.async_get(self.hass)
         device = next(
-            iter(dr.async_entries_for_config_entry(registry, self.config_entry.entry_id)),
+            iter(
+                dr.async_entries_for_config_entry(registry, self.config_entry.entry_id)
+            ),
             None,
         )
         if device is not None:
@@ -95,9 +98,7 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
     def _include_history(self) -> bool:
         """Whether the opt-in per-parcel history option is enabled."""
         return bool(
-            self.config_entry.options.get(
-                CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
-            )
+            self.config_entry.options.get(CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY)
         )
 
     def _apply_delivered_filter(self, parcels: list[dict]) -> list[dict]:
@@ -110,10 +111,11 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
 
     async def _async_update_data(self) -> list[dict]:
         tracked = self._tracked()
+        postal_code = self.config_entry.options.get(CONF_POSTAL_CODE)
         pairs = [
-            (item[CONF_TRUNKRS_NR], item[CONF_POSTAL_CODE])
+            (item[CONF_TRUNKRS_NR], postal_code)
             for item in tracked
-            if item.get(CONF_TRUNKRS_NR) and item.get(CONF_POSTAL_CODE)
+            if item.get(CONF_TRUNKRS_NR) and postal_code
         ]
 
         # Drop cache entries for parcels that were untracked, so the cache
@@ -168,7 +170,9 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
 
         include_history = self._include_history
         normalized = [
-            normalize_parcel(raw, trunkrs_nr=trunkrs_nr, include_history=include_history)
+            normalize_parcel(
+                raw, trunkrs_nr=trunkrs_nr, include_history=include_history
+            )
             for trunkrs_nr, raw in entries
         ]
         active = [p for p in normalized if not p["delivered"]]

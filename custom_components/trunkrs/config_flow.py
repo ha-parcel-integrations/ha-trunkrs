@@ -1,4 +1,5 @@
 """Config flow for the Trunkrs parcel tracker integration."""
+
 from __future__ import annotations
 
 import logging
@@ -14,7 +15,6 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -71,9 +71,7 @@ def valid_postcode(value: str) -> bool:
     return bool(_POSTCODE_RE.match(value))
 
 
-async def async_verify_parcel(
-    hass, trunkrs_nr: str, postal_code: str
-) -> bool | None:
+async def async_verify_parcel(hass, trunkrs_nr: str, postal_code: str) -> bool | None:
     """Verify a number/postcode pair with Trunkrs.
 
     Returns ``True`` when Trunkrs knows the pair, ``False`` when it rejects it,
@@ -168,148 +166,118 @@ class TrunkrsOptionsFlowHandler(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show and handle the single sectioned options form."""
+        """Offer parcel management separately from integration settings."""
+        return self.async_show_menu(
+            step_id="init", menu_options=["parcels", "settings"]
+        )
+
+    async def async_step_parcels(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show and handle the complete tracked-code list."""
         errors: dict[str, str] = {}
-        parcels = _current_parcels(self.config_entry)
         hub_postcode = self.config_entry.options.get(CONF_POSTAL_CODE, "")
-
         if user_input is not None:
-            parcels_section = user_input.get("parcels", {})
-            delivered_section = user_input.get("delivered", {})
-            history_section = user_input.get("history", {})
-            polling_section = user_input.get("polling", {})
-
-            # Remove first, then add — so re-adding a just-removed number works.
-            to_remove = set(parcels_section.get("remove", []))
-            parcels = [p for p in parcels if p[CONF_TRUNKRS_NR] not in to_remove]
-
-            add_nr = normalize_trunkrs_nr(parcels_section.get("add") or "")
-            if add_nr:
-                if not valid_trunkrs_nr(add_nr):
-                    errors["base"] = "invalid_trunkrs_nr"
-                elif any(p[CONF_TRUNKRS_NR] == add_nr for p in parcels):
-                    errors["base"] = "already_tracked"
-                elif (
-                    await async_verify_parcel(self.hass, add_nr, hub_postcode)
-                ) is False:
-                    # Trunkrs answered, and it does not know this pair.
-                    errors["base"] = "unknown_parcel"
-                else:
-                    parcels.append(
-                        {CONF_TRUNKRS_NR: add_nr, CONF_POSTAL_CODE: hub_postcode}
-                    )
-
+            codes = list(
+                dict.fromkeys(
+                    normalize_trunkrs_nr(code)
+                    for code in user_input.get("tracking_codes", [])
+                    if normalize_trunkrs_nr(code)
+                )
+            )
+            if any(not valid_trunkrs_nr(code) for code in codes):
+                errors["base"] = "invalid_trunkrs_nr"
+            if not errors:
+                for code in codes:
+                    if (
+                        await async_verify_parcel(self.hass, code, hub_postcode)
+                    ) is False:
+                        errors["base"] = "unknown_parcel"
+                        break
             if not errors:
                 return self.async_create_entry(
                     title="",
                     data={
-                        CONF_POSTAL_CODE: hub_postcode,
-                        CONF_PARCELS: parcels,
-                        CONF_DELIVERED_FILTER_TYPE: delivered_section[
-                            CONF_DELIVERED_FILTER_TYPE
-                        ],
-                        CONF_DELIVERED_FILTER_AMOUNT: int(
-                            delivered_section[CONF_DELIVERED_FILTER_AMOUNT]
-                        ),
-                        CONF_INCLUDE_HISTORY: bool(
-                            history_section[CONF_INCLUDE_HISTORY]
-                        ),
-                        CONF_REFRESH_INTERVAL: int(
-                            polling_section[CONF_REFRESH_INTERVAL]
-                        ),
+                        **self.config_entry.options,
+                        CONF_PARCELS: [{CONF_TRUNKRS_NR: code} for code in codes],
                     },
                 )
-
-        current = self.config_entry.options
-
-        parcels_fields: dict[Any, Any] = {vol.Optional("add", default=""): str}
-        if parcels:
-            parcels_fields[vol.Optional("remove", default=[])] = selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(
-                            value=p[CONF_TRUNKRS_NR],
-                            label=f"{p[CONF_TRUNKRS_NR]} ({p[CONF_POSTAL_CODE]})",
-                        )
-                        for p in parcels
-                    ],
-                    multiple=True,
-                    mode=selector.SelectSelectorMode.LIST,
-                )
-            )
-
+        current_codes = [
+            parcel[CONF_TRUNKRS_NR] for parcel in _current_parcels(self.config_entry)
+        ]
         schema = vol.Schema(
             {
-                vol.Required("parcels"): section(
-                    vol.Schema(parcels_fields), {"collapsed": False}
-                ),
-                vol.Required("delivered"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_DELIVERED_FILTER_TYPE,
-                                default=current.get(
-                                    CONF_DELIVERED_FILTER_TYPE,
-                                    DEFAULT_DELIVERED_FILTER_TYPE,
-                                ),
-                            ): selector.SelectSelector(
-                                selector.SelectSelectorConfig(
-                                    options=["days", "parcels"],
-                                    translation_key=CONF_DELIVERED_FILTER_TYPE,
-                                    mode=selector.SelectSelectorMode.LIST,
-                                )
-                            ),
-                            vol.Required(
-                                CONF_DELIVERED_FILTER_AMOUNT,
-                                default=current.get(
-                                    CONF_DELIVERED_FILTER_AMOUNT,
-                                    DEFAULT_DELIVERED_FILTER_AMOUNT,
-                                ),
-                            ): selector.NumberSelector(
-                                selector.NumberSelectorConfig(
-                                    min=1,
-                                    max=365,
-                                    step=1,
-                                    mode=selector.NumberSelectorMode.BOX,
-                                )
-                            ),
-                        }
-                    ),
-                    {"collapsed": True},
-                ),
-                vol.Required("history"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_INCLUDE_HISTORY,
-                                default=current.get(
-                                    CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
-                                ),
-                            ): selector.BooleanSelector(),
-                        }
-                    ),
-                    {"collapsed": True},
-                ),
-                vol.Required("polling"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_REFRESH_INTERVAL,
-                                # str(): selector option values are strings, so a
-                                # stored int default trips "expected str" on submit.
-                                default=str(
-                                    current.get(
-                                        CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL
-                                    )
-                                ),
-                            ): _interval_selector(),
-                        }
-                    ),
-                    {"collapsed": True},
-                ),
+                vol.Optional("tracking_codes"): selector.TextSelector(
+                    selector.TextSelectorConfig(multiple=True)
+                )
             }
         )
-
         return self.async_show_form(
-            step_id="init", data_schema=schema, errors=errors
+            step_id="parcels",
+            data_schema=self.add_suggested_values_to_schema(
+                schema, {"tracking_codes": current_codes}
+            ),
+            errors=errors,
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show and handle non-parcel integration settings."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="",
+                data={
+                    **self.config_entry.options,
+                    CONF_DELIVERED_FILTER_TYPE: user_input[CONF_DELIVERED_FILTER_TYPE],
+                    CONF_DELIVERED_FILTER_AMOUNT: int(
+                        user_input[CONF_DELIVERED_FILTER_AMOUNT]
+                    ),
+                    CONF_INCLUDE_HISTORY: bool(user_input[CONF_INCLUDE_HISTORY]),
+                    CONF_REFRESH_INTERVAL: int(user_input[CONF_REFRESH_INTERVAL]),
+                },
+            )
+
+        current = self.config_entry.options
+        return self.async_show_form(
+            step_id="settings",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_DELIVERED_FILTER_TYPE,
+                        default=current.get(
+                            CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
+                        ),
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=["days", "parcels"],
+                            translation_key=CONF_DELIVERED_FILTER_TYPE,
+                            mode=selector.SelectSelectorMode.LIST,
+                        )
+                    ),
+                    vol.Required(
+                        CONF_DELIVERED_FILTER_AMOUNT,
+                        default=current.get(
+                            CONF_DELIVERED_FILTER_AMOUNT,
+                            DEFAULT_DELIVERED_FILTER_AMOUNT,
+                        ),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1, max=365, step=1, mode=selector.NumberSelectorMode.BOX
+                        )
+                    ),
+                    vol.Required(
+                        CONF_INCLUDE_HISTORY,
+                        default=current.get(
+                            CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
+                        ),
+                    ): selector.BooleanSelector(),
+                    vol.Required(
+                        CONF_REFRESH_INTERVAL,
+                        default=str(
+                            current.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
+                        ),
+                    ): _interval_selector(),
+                }
+            ),
         )
