@@ -70,6 +70,22 @@ order numbers. If you know it, please
 | Delivered parcels | 7 days | Keep delivered parcels visible for N days, or the N most recent |
 | Parcel history | off | Adds a per-parcel timeline attribute |
 
+## Sensors
+
+| Entity | Description |
+|---|---|
+| `sensor.trunkrs_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
+| `sensor.trunkrs_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
+| `sensor.trunkrs_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.trunkrs_delivered_parcels` | Recently delivered parcels (see the retention option) |
+| `sensor.trunkrs_last_successful_update` | Diagnostic: when Trunkrs was last polled successfully |
+
+A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
+
+A **Deliveries** calendar entity is also created, showing expected delivery windows for active parcels — read-only, no extra API calls.
+
+A **Refresh** button entity forces an immediate poll, without waiting for the next scheduled interval.
+
 ## Events
 
 The integration fires these on the Home Assistant event bus. Each also exists
