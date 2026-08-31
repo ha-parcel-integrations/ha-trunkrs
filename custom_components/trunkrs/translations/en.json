@@ -67,12 +67,12 @@
           }
         },
         "menu_options": {
-          "parcels": "Parcels",
+          "parcels": "Manage parcels",
           "settings": "Settings"
         }
       },
       "parcels": {
-        "title": "Parcels",
+        "title": "Manage parcels",
         "data": {
           "tracking_codes": "Tracking codes"
         }

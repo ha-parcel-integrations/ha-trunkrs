@@ -43,7 +43,7 @@
               "delivered_filter_amount": "Aantal"
             },
             "data_description": {
-              "delivered_filter_type": "Toon bezorgde pakketten van de afgelopen X dagen, of beperk tot de X meest recente.",
+              "delivered_filter_type": "Toon bezorgde pakketten van de laatste X dagen, of beperk tot de X meest recente.",
               "delivered_filter_amount": "Aantal dagen of pakketten om te tonen."
             }
           },
@@ -53,7 +53,7 @@
               "include_history": "Statusgeschiedenis toevoegen"
             },
             "data_description": {
-              "include_history": "Voegt per pakket een geschiedenis-attribuut toe met elke statusupdate (tijdstip, status, oorspronkelijke tekst). Standaard uit."
+              "include_history": "Voegt per pakket een geschiedenisattribuut toe met elke statusupdate (tijdstip, status, oorspronkelijke tekst). Standaard uit."
             }
           },
           "polling": {
@@ -67,12 +67,12 @@
           }
         },
         "menu_options": {
-          "parcels": "Pakketten",
+          "parcels": "Pakketten beheren",
           "settings": "Instellingen"
         }
       },
       "parcels": {
-        "title": "Pakketten",
+        "title": "Pakketten beheren",
         "data": {
           "tracking_codes": "Trackingcodes"
         }
@@ -82,14 +82,14 @@
         "data": {
           "delivered_filter_type": "Bezorgde pakketten: filteren op",
           "delivered_filter_amount": "Bezorgde pakketten: aantal",
-          "include_history": "Statusgeschiedenis opnemen",
-          "refresh_interval": "Vernieuwen elke"
+          "include_history": "Statusgeschiedenis toevoegen",
+          "refresh_interval": "Ververs elke"
         }
       }
     },
     "error": {
       "invalid_trunkrs_nr": "Dat lijkt geen Trunkrs-nummer te zijn.",
-      "already_tracked": "Dat pakket wordt al gevolgd.",
+      "already_tracked": "Dit pakket wordt al gevolgd.",
       "unknown_parcel": "Trunkrs kent dit nummer niet bij de postcode van de hub. Controleer beide."
     }
   },
