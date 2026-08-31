@@ -66,9 +66,30 @@ order numbers. If you know it, please
 
 | Option | Default | What it does |
 |---|---|---|
-| Refresh interval | 30 min | How often Trunkrs is polled (15 / 30 / 60 / 120 / 240) |
 | Delivered parcels | 7 days | Keep delivered parcels visible for N days, or the N most recent |
 | Parcel history | off | Adds a per-parcel timeline attribute |
+
+## Dynamic polling
+
+Instead of polling Trunkrs at the same rate around the clock, the integration
+adjusts its own cadence to what your tracked parcels are actually doing:
+
+- **Quiet hours** — no polling between 00:00–06:00 local time, aside from one
+  catch-up check at each end of that window (around midnight and around 6
+  AM).
+- **Hot (every 15 minutes)** — as soon as a tracked parcel is
+  `out_for_delivery`, starting an hour before its expected delivery time (or
+  immediately if no time is known).
+- **Mid (every 45 minutes)** — any other in-progress parcel.
+- **Fully stopped** — nothing is tracked, or every tracked parcel has been
+  delivered. Adding a parcel back (via the options dialog, the
+  `trunkrs.track_parcel` service, or a dashboard button) resumes polling
+  immediately.
+- A small, fixed per-hub offset is added on top, so not every Trunkrs hub out
+  there polls at exactly the same second.
+
+This is not user-configurable — it is the only polling behaviour this
+integration has.
 
 ## Sensors
 

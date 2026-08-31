@@ -55,15 +55,6 @@
             "data_description": {
               "include_history": "Add a per-parcel history attribute listing each status update (timestamp, status, original text). Off by default."
             }
-          },
-          "polling": {
-            "name": "Polling",
-            "data": {
-              "refresh_interval": "Refresh every"
-            },
-            "data_description": {
-              "refresh_interval": "How often the integration checks Trunkrs for parcel updates. A slower interval is gentler on Trunkrs's API; the default of 30 minutes is plenty for most parcels."
-            }
           }
         },
         "menu_options": {
@@ -82,8 +73,7 @@
         "data": {
           "delivered_filter_type": "Delivered parcels: filter by",
           "delivered_filter_amount": "Delivered parcels: amount",
-          "include_history": "Include status history",
-          "refresh_interval": "Refresh every"
+          "include_history": "Include status history"
         }
       }
     },
@@ -94,15 +84,6 @@
     }
   },
   "selector": {
-    "refresh_interval": {
-      "options": {
-        "15": "15 minutes",
-        "30": "30 minutes",
-        "60": "60 minutes",
-        "120": "120 minutes",
-        "240": "240 minutes"
-      }
-    },
     "delivered_filter_type": {
       "options": {
         "days": "Days",

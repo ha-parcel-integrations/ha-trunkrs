@@ -14,7 +14,6 @@ from custom_components.trunkrs.const import (
     CONF_INCLUDE_HISTORY,
     CONF_PARCELS,
     CONF_POSTAL_CODE,
-    CONF_REFRESH_INTERVAL,
     CONF_TRUNKRS_NR,
     DOMAIN,
 )
@@ -95,7 +94,6 @@ def _entry(hass, parcels=None) -> MockConfigEntry:
             CONF_PARCELS: parcels or [],
             CONF_DELIVERED_FILTER_TYPE: "days",
             CONF_DELIVERED_FILTER_AMOUNT: 7,
-            CONF_REFRESH_INTERVAL: 30,
             CONF_INCLUDE_HISTORY: False,
         },
     )
@@ -116,7 +114,6 @@ def _submit(add: str = "", remove=None) -> dict:
             CONF_DELIVERED_FILTER_AMOUNT: 7,
         },
         "history": {CONF_INCLUDE_HISTORY: False},
-        "polling": {CONF_REFRESH_INTERVAL: "30"},
     }
 
 
@@ -148,7 +145,6 @@ async def test_options_settings_preserve_parcel_list(hass):
             CONF_DELIVERED_FILTER_TYPE: "days",
             CONF_DELIVERED_FILTER_AMOUNT: 7,
             CONF_INCLUDE_HISTORY: False,
-            CONF_REFRESH_INTERVAL: "30",
         },
     )
     assert result["data"][CONF_PARCELS] == parcels

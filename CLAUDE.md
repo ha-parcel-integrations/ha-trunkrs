@@ -75,6 +75,24 @@ the payload→canonical mapping. Do not duplicate them here.
   refresh, a change **to** DELIVERED fires only `_delivered`. Entities:
   `has_entity_name` + `translation_key`, `icons.json`, translated units.
 
+## Polling
+
+Polling is dynamic and status-driven, unconditionally — there is no
+user-facing interval option. The coordinator recomputes its own cadence at
+the end of every refresh: a quiet window (00:00–06:00 local, with catch-up
+anchors at each end), a 15-minute hot tier when a tracked parcel is
+`out_for_delivery` (immediately, or from an hour before `planned_from`), a
+45-minute mid tier otherwise, and a full stop (`update_interval = None`)
+when nothing is tracked or everything tracked is delivered. No raw Trunkrs
+status has been confirmed to map to `out_for_delivery` yet (see the status
+vocabulary note above) — `timeSlot.from`/`to` (or the `low`/`high` fallback)
+is populated for non-delivered parcels regardless, so once a real
+`out_for_delivery` status is confirmed the lookahead window will apply
+normally; until then every active parcel lands on the mid tier. See
+`coordinator.py`'s `_hottest_tier_minutes` / `_next_update_interval` and
+`ha-carrier-template`'s `example_carrier/coordinator.py` for the canonical
+shape this mirrors.
+
 ## Running tests
 
 ```
