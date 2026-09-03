@@ -350,6 +350,13 @@ def test_accepted_by_driver_maps_to_out_for_delivery():
     assert parcel["status"] == ParcelStatus.OUT_FOR_DELIVERY
 
 
+def test_sorted_at_sub_depot_maps_to_in_transit():
+    """Confirmed in issue #6: same network stage as SHIPMENT_SORTED."""
+    payload = {**DELIVERED, "currentState": {"stateName": "SHIPMENT_SORTED_AT_SUB_DEPOT"}}
+    parcel = normalize_parcel(payload, trunkrs_nr="TR123")
+    assert parcel["status"] == ParcelStatus.IN_TRANSIT
+
+
 def test_tracking_url_deep_links_with_the_postal_code():
     """Confirmed in issue #7: number + postcode links straight to the parcel."""
     parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR123", postal_code="1234AB")
