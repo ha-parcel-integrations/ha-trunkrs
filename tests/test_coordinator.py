@@ -343,6 +343,13 @@ def test_normalize_falls_back_to_the_wide_delivery_window():
     assert parcel["planned_to"] == "2026-07-10T20:30:00.000Z"
 
 
+def test_accepted_by_driver_maps_to_out_for_delivery():
+    """Confirmed in issue #6: the driver has the parcel on today's route."""
+    payload = {**DELIVERED, "currentState": {"stateName": "SHIPMENT_ACCEPTED_BY_DRIVER"}}
+    parcel = normalize_parcel(payload, trunkrs_nr="TR123")
+    assert parcel["status"] == ParcelStatus.OUT_FOR_DELIVERY
+
+
 def test_unmapped_state_reports_unknown_but_stays_undelivered():
     """An unmapped status must never be filed away as delivered."""
     parcel = normalize_parcel(IN_TRANSIT, trunkrs_nr="TR123")

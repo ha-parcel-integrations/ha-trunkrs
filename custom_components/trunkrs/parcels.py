@@ -42,6 +42,10 @@ _STATUS_MAP: dict[str, ParcelStatus] = {
     # Confirmed in issue #5: parcel at the sort facility, not yet on a
     # delivery vehicle — still "in the carrier's network".
     "SHIPMENT_SORTED": ParcelStatus.IN_TRANSIT,
+    # Confirmed in issue #6: the delivery driver has taken the parcel onto
+    # their route ("Onderweg" / "almost there" per the reporter) — this is
+    # today's delivery vehicle, not just the carrier's network.
+    "SHIPMENT_ACCEPTED_BY_DRIVER": ParcelStatus.OUT_FOR_DELIVERY,
 }
 
 # The one state we can also act on structurally (``delivered`` / ``delivered_at``
