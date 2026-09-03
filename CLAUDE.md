@@ -7,11 +7,12 @@ inbox), built on the GLS/Dragonfly shape. No DTO layer.
 ## ⚠️ Read TODO.md first (pre-1.0 status vocabulary)
 
 Field mapping is **done** (`carrier-research/trunkrs/api/tracing_details.md`). What remains is the
-**status vocabulary**: `_STATUS_MAP` holds exactly one confirmed value,
-`SHIPMENT_DELIVERED`; everything else reports `unknown` + a one-shot warning. **Do
-not add speculative `SHIPMENT_*` entries** — a wrong guess silently reports the
-wrong status, while `unknown` is honest and collects real names from users. Add a
-value only when confirmed against a real parcel. See TODO.md.
+**status vocabulary**: `_STATUS_MAP` holds two confirmed values,
+`SHIPMENT_DELIVERED` and `SHIPMENT_SORTED` (#5); everything else reports `unknown`
++ a one-shot warning. **Do not add speculative `SHIPMENT_*` entries** — a wrong
+guess silently reports the wrong status, while `unknown` is honest and collects
+real names from users. Add a value only when confirmed against a real parcel.
+See TODO.md.
 
 ## Shared conventions — fetch when relevant
 

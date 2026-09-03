@@ -67,7 +67,7 @@ TO_REDACT = {
 
 _SHARING_NOTE = (
     "The Trunkrs field mapping is implemented, but the status vocabulary is "
-    "still incomplete: only 'SHIPMENT_DELIVERED' is confirmed, so a parcel in "
+    "still incomplete: only a few states are confirmed, so a parcel in "
     "another state reports 'unknown' and logs a one-shot warning. If you see "
     f"such a warning, sharing that log line at {NEW_ISSUE_URL} lets us map the "
     "remaining statuses. Personal fields are redacted below, but please still "

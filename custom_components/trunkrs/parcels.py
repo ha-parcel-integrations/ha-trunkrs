@@ -31,7 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 # The payload shape was contributed in issue #1 (thanks @joerimul); see
 # ``docs/api/tracing_details.md`` for the full sample and field mapping.
 #
-# ⚠️ The status vocabulary is still INCOMPLETE. Only ``SHIPMENT_DELIVERED`` has
+# ⚠️ The status vocabulary is still INCOMPLETE. Only the values below have
 # actually been observed. The ``SHIPMENT_*`` prefix suggests a family, but the
 # other values are deliberately NOT guessed: a wrong guess would silently
 # report the wrong status, whereas an unmapped one reports ``unknown`` and logs
@@ -39,6 +39,9 @@ _LOGGER = logging.getLogger(__name__)
 # vocabulary collects itself from real users. Add each confirmed value here.
 _STATUS_MAP: dict[str, ParcelStatus] = {
     "SHIPMENT_DELIVERED": ParcelStatus.DELIVERED,
+    # Confirmed in issue #5: parcel at the sort facility, not yet on a
+    # delivery vehicle — still "in the carrier's network".
+    "SHIPMENT_SORTED": ParcelStatus.IN_TRANSIT,
 }
 
 # The one state we can also act on structurally (``delivered`` / ``delivered_at``

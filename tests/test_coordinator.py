@@ -184,9 +184,9 @@ async def test_polling_stops_when_everything_delivered(hass):
 
 
 async def test_polling_is_mid_for_a_non_out_for_delivery_active_parcel(hass):
-    """Trunkrs's confirmed status vocabulary has only ``SHIPMENT_DELIVERED``
-    so far (see parcels.py) — any other status reports ``unknown``, which is
-    still an active, not-yet-delivered parcel and lands on the mid tier."""
+    """No confirmed Trunkrs status maps to ``out_for_delivery`` yet (see
+    parcels.py) — an unmapped status reports ``unknown``, which is still an
+    active, not-yet-delivered parcel and lands on the mid tier."""
     entry = _entry(hass)
     client = AsyncMock()
     client.async_get_parcel = AsyncMock(return_value=IN_TRANSIT)
@@ -412,6 +412,11 @@ def test_build_history_handles_a_payload_without_attempts():
 
 def test_map_parcel_status_none_is_silently_unknown():
     assert map_parcel_status(None) == ParcelStatus.UNKNOWN
+
+
+def test_map_parcel_status_sorted_is_in_transit():
+    """Confirmed in issue #5: SHIPMENT_SORTED is a sort-facility state."""
+    assert map_parcel_status("SHIPMENT_SORTED") == ParcelStatus.IN_TRANSIT
 
 
 def test_map_parcel_status_unmapped_warns_once(caplog):
