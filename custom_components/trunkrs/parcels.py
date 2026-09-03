@@ -193,17 +193,24 @@ def build_history(
     return ordered[-max_events:]
 
 
-def _tracking_url() -> str:
+def _tracking_url(trunkrs_nr: str, postal_code: str | None) -> str:
     """Return the consumer tracking page link for a parcel.
 
-    Trunkrs has no confirmed deep-link format, so this is the plain tracking
-    page — revisit if one is discovered.
+    Confirmed in issue #7: ``{trunkrs_nr}/{postal_code}`` deep-links straight
+    to the parcel. Falls back to the plain tracking page when the postcode
+    isn't available (e.g. called without it in a test).
     """
-    return TRACKING_URL
+    if not postal_code:
+        return TRACKING_URL
+    return f"{TRACKING_URL}{trunkrs_nr}/{postal_code}"
 
 
 def normalize_parcel(
-    raw: dict, *, trunkrs_nr: str, include_history: bool = False
+    raw: dict,
+    *,
+    trunkrs_nr: str,
+    postal_code: str | None = None,
+    include_history: bool = False,
 ) -> dict:
     """Return a carrier-agnostic parcel dict with the raw payload under ``raw``.
 
@@ -255,7 +262,7 @@ def normalize_parcel(
         "planned_to": None if delivered else planned_to,
         "pickup": False,
         "pickup_point": None,
-        "url": _tracking_url(),
+        "url": _tracking_url(trunkrs_nr, postal_code),
         # Trunkrs does not expose weight/dimensions on the consumer endpoint;
         # kept on the shape for parity with DPD/PostNL so the aggregator can
         # read every carrier the same way.

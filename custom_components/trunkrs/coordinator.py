@@ -258,7 +258,10 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         include_history = self._include_history
         normalized = [
             normalize_parcel(
-                raw, trunkrs_nr=trunkrs_nr, include_history=include_history
+                raw,
+                trunkrs_nr=trunkrs_nr,
+                postal_code=postal_code,
+                include_history=include_history,
             )
             for trunkrs_nr, raw in entries
         ]

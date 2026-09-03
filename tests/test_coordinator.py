@@ -350,6 +350,17 @@ def test_accepted_by_driver_maps_to_out_for_delivery():
     assert parcel["status"] == ParcelStatus.OUT_FOR_DELIVERY
 
 
+def test_tracking_url_deep_links_with_the_postal_code():
+    """Confirmed in issue #7: number + postcode links straight to the parcel."""
+    parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR123", postal_code="1234AB")
+    assert parcel["url"] == "https://parcel.trunkrs.nl/TR123/1234AB"
+
+
+def test_tracking_url_falls_back_without_a_postal_code():
+    parcel = normalize_parcel(DELIVERED, trunkrs_nr="TR123")
+    assert parcel["url"] == "https://parcel.trunkrs.nl/"
+
+
 def test_unmapped_state_reports_unknown_but_stays_undelivered():
     """An unmapped status must never be filed away as delivered."""
     parcel = normalize_parcel(IN_TRANSIT, trunkrs_nr="TR123")
