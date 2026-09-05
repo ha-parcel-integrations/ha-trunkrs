@@ -14,6 +14,28 @@ guess silently reports the wrong status, while `unknown` is honest and collects
 real names from users. Add a value only when confirmed against a real parcel.
 See TODO.md.
 
+## ⚠️ Version 1.0.0 decision — status vocabulary is still incomplete
+
+History is 0.11.0 → 0.12.0 → 1.0.0, so this was **not** a first release and
+the "first release may jump straight to 1.0.0" exception in
+`CONVENTIONS.md` does not apply. The normal bar — status vocabulary
+complete, mapping cleanly onto every canonical `ParcelStatus` — is not met:
+`_STATUS_MAP` (`parcels.py`) covers three of the eight canonical statuses
+(DELIVERED, IN_TRANSIT, OUT_FOR_DELIVERY, from four confirmed raw values).
+RETURNING and PROBLEM have zero confirmed raw triggers, and the whole
+failed/not-delivered vocabulary (`reasonCode`, see `_note_reason_code`) is
+unconfirmed.
+
+**Decision: the version stays at 1.0.0 anyway.** The confirmed values cover
+the normal happy-path delivery flow (sorted → out for delivery →
+delivered), and every unmapped raw status already degrades safely to
+`unknown` plus a one-shot warning rather than a silently wrong guess — the
+same pre-1.0 discipline carried forward unchanged, version bump aside. This
+is the maintainer knowingly accepting that `status_vocab` is not provably
+complete, not a claim that the vocabulary is finished — treat RETURNING and
+PROBLEM as still-open gaps, not settled non-issues, and keep applying the
+"don't guess, wait for a confirmed value" rule above to them.
+
 ## Shared conventions — fetch when relevant
 
 Suite-wide rules live in
