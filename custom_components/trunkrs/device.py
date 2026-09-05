@@ -13,6 +13,8 @@ from homeassistant.helpers.entity import DeviceInfo
 
 from .const import CONF_POSTAL_CODE, DOMAIN
 
+ATTRIBUTION = "Data provided by Trunkrs"
+
 
 def build_device_info(entry: ConfigEntry) -> DeviceInfo:
     """Return the DeviceInfo shared by every entity for this Trunkrs hub.

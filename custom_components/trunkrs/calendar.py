@@ -12,7 +12,7 @@ from homeassistant.util import dt as dt_util
 
 from . import TrunkrsConfigEntry
 from .coordinator import TrunkrsCoordinator
-from .device import build_device_info
+from .device import ATTRIBUTION, build_device_info
 
 PARALLEL_UPDATES = 0
 
@@ -58,7 +58,7 @@ class TrunkrsDeliveriesCalendar(
 
     _attr_has_entity_name = True
     _attr_translation_key = "deliveries"
-    _attr_attribution = "Data provided by Trunkrs"
+    _attr_attribution = ATTRIBUTION
 
     def __init__(self, coordinator: TrunkrsCoordinator, entry: ConfigEntry) -> None:
         """Initialize the calendar."""
