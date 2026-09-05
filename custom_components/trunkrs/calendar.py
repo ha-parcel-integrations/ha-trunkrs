@@ -13,22 +13,11 @@ from homeassistant.util import dt as dt_util
 from . import TrunkrsConfigEntry
 from .coordinator import TrunkrsCoordinator
 from .device import ATTRIBUTION, build_device_info
+from .parcels import parse_iso
 
 PARALLEL_UPDATES = 0
 
 _DEFAULT_EVENT_DURATION = timedelta(hours=1)
-
-
-def _parse(value: str | None) -> datetime | None:
-    """Parse an ISO 8601 string into a timezone-aware datetime, or ``None``."""
-    if not value:
-        return None
-    parsed = dt_util.parse_datetime(value)
-    if parsed is None:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=dt_util.UTC)
-    return parsed
 
 
 async def async_setup_entry(
@@ -69,10 +58,10 @@ class TrunkrsDeliveriesCalendar(
     def _events(self) -> list[CalendarEvent]:
         events: list[CalendarEvent] = []
         for parcel in self.coordinator.data or []:
-            start = _parse(parcel.get("planned_from"))
+            start = parse_iso(parcel.get("planned_from"))
             if start is None:
                 continue
-            end = _parse(parcel.get("planned_to"))
+            end = parse_iso(parcel.get("planned_to"))
             if end is None or end <= start:
                 end = start + _DEFAULT_EVENT_DURATION
 

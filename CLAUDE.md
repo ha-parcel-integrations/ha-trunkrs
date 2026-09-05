@@ -4,15 +4,17 @@ Home Assistant custom integration for **Trunkrs** (NL same-day courier) parcel
 tracking. Distributed via HACS; not part of HA core. Code-based carrier (no
 inbox), built on the GLS/Dragonfly shape. No DTO layer.
 
-## ⚠️ Read TODO.md first (pre-1.0 status vocabulary)
+## ⚠️ Status vocabulary is still incomplete
 
 Field mapping is **done** (`carrier-research/trunkrs/api/tracing_details.md`). What remains is the
-**status vocabulary**: `_STATUS_MAP` holds two confirmed values,
-`SHIPMENT_DELIVERED` and `SHIPMENT_SORTED` (#5); everything else reports `unknown`
-+ a one-shot warning. **Do not add speculative `SHIPMENT_*` entries** — a wrong
-guess silently reports the wrong status, while `unknown` is honest and collects
-real names from users. Add a value only when confirmed against a real parcel.
-See TODO.md.
+**status vocabulary**: `_STATUS_MAP` (`parcels.py`) holds four confirmed values —
+`SHIPMENT_DELIVERED`, `SHIPMENT_SORTED` (#5), `SHIPMENT_ACCEPTED_BY_DRIVER`
+and `SHIPMENT_SORTED_AT_SUB_DEPOT` (both #6) — mapping to `DELIVERED`,
+`IN_TRANSIT`, `OUT_FOR_DELIVERY` and `IN_TRANSIT` respectively; everything else
+reports `unknown` + a one-shot warning. **Do not add speculative `SHIPMENT_*`
+entries** — a wrong guess silently reports the wrong status, while `unknown` is
+honest and collects real names from users. Add a value only when confirmed
+against a real parcel.
 
 ## ⚠️ Version 1.0.0 decision — status vocabulary is still incomplete
 
@@ -85,15 +87,16 @@ the payload→canonical mapping. Do not duplicate them here.
   Trunkrs" → callers **accept the parcel anyway** (an outage must never stop a user
   adding a valid parcel). Only a definite `False` blocks. (Verify-before-store is a
   capability GLS lacks, so unlike GLS this rejects typos up front.)
-- **`delivered` is hard-coded `False`** while the payload is unmapped, so no parcel
-  is wrongly filed as completed and vanishes from view.
+- **`delivered` is `raw_status == STATE_DELIVERED`** (`parcels.py`) — a real
+  check against the one confirmed terminal state, not a guess. An unmapped
+  status still reports `delivered: False`, so no parcel is wrongly filed as
+  completed and vanishes from view.
 - **No pickup sensors** (unlike GLS's `en_route_to_parcel_shop` / `awaiting_pickup`)
   — we don't yet know whether Trunkrs exposes pickup points; two permanently-zero
   sensors are worse than adding them later.
 - **Diagnostics is the collection mechanism**, not just debugging: it carries the
   raw payload + a "read this before sharing" note; `TO_REDACT` is deliberately
-  broad because the real field names are unknown. The coordinator also logs the
-  payload's top-level keys once (`_log_payload_shape`).
+  broad because the real field names are unknown.
 - Four bus events + device triggers carrying `device_id`, suppressed on first
   refresh, a change **to** DELIVERED fires only `_delivered`. Entities:
   `has_entity_name` + `translation_key`, `icons.json`, translated units.
@@ -106,15 +109,15 @@ the end of every refresh: a quiet window (00:00–06:00 local, with catch-up
 anchors at each end), a 15-minute hot tier when a tracked parcel is
 `out_for_delivery` (immediately, or from an hour before `planned_from`), a
 45-minute mid tier otherwise, and a full stop (`update_interval = None`)
-when nothing is tracked or everything tracked is delivered. No raw Trunkrs
-status has been confirmed to map to `out_for_delivery` yet (see the status
-vocabulary note above) — `timeSlot.from`/`to` (or the `low`/`high` fallback)
-is populated for non-delivered parcels regardless, so once a real
-`out_for_delivery` status is confirmed the lookahead window will apply
-normally; until then every active parcel lands on the mid tier. See
-`coordinator.py`'s `_hottest_tier_minutes` / `_next_update_interval` and
-`ha-carrier-template`'s `example_carrier/coordinator.py` for the canonical
-shape this mirrors.
+when nothing is tracked or everything tracked is delivered. `SHIPMENT_ACCEPTED_BY_DRIVER`
+maps to `out_for_delivery` (confirmed in issue #6, see the status vocabulary
+note above), so the hot tier is live: a tracked parcel in that raw state
+gets 15-minute polling immediately if no `planned_from` is known, or once
+`now` is within `HOT_LOOKAHEAD_HOURS` (1h) of `planned_from`/`planned_to`
+(`timeSlot.from`/`to`, falling back to `low`/`high`). Every other active
+status — including `unknown` — lands on the mid tier. See `coordinator.py`'s
+`_hottest_tier_minutes` / `_next_update_interval` and `ha-carrier-template`'s
+`example_carrier/coordinator.py` for the canonical shape this mirrors.
 
 ## Running tests
 

@@ -1,8 +1,7 @@
 """Sensor platform for the Trunkrs parcel tracker integration."""
 from __future__ import annotations
 
-import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -21,8 +20,7 @@ from . import TrunkrsConfigEntry
 from .const import DOMAIN
 from .coordinator import TrunkrsCoordinator
 from .device import ATTRIBUTION, build_device_info
-
-_LOGGER = logging.getLogger(__name__)
+from .parcels import parse_iso
 
 # The DataUpdateCoordinator handles fan-out to all entities; HA's per-entity
 # update throttling adds nothing here.
@@ -206,16 +204,10 @@ class TrunkrsNextDeliverySensor(CoordinatorEntity[TrunkrsCoordinator], SensorEnt
     def _delivery_moments(self) -> list[tuple[datetime, dict]]:
         result: list[tuple[datetime, dict]] = []
         for parcel in self.coordinator.data or []:
-            moment_str = parcel.get("planned_from")
-            if not moment_str:
+            dt = parse_iso(parcel.get("planned_from"))
+            if dt is None:
                 continue
-            try:
-                dt = datetime.fromisoformat(moment_str.replace("Z", "+00:00"))
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                result.append((dt, parcel))
-            except ValueError:
-                _LOGGER.debug("Could not parse delivery moment: %s", moment_str)
+            result.append((dt, parcel))
         return result
 
     @property

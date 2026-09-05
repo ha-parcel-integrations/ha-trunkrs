@@ -140,7 +140,7 @@ def map_event_status(raw_status: str | None) -> ParcelStatus | None:
     return None
 
 
-def _parse_iso(value: str | None) -> datetime | None:
+def parse_iso(value: str | None) -> datetime | None:
     """Parse an ISO 8601 string to an aware datetime, or ``None`` on failure.
 
     Naive values are treated as UTC so a list always sorts without crashing
@@ -186,7 +186,7 @@ def build_history(
             "status": map_event_status(state_name),
             "raw_status": state_name,
         }
-        dt = _parse_iso(timestamp)
+        dt = parse_iso(timestamp)
         if dt is None:
             unparseable.append(entry)
         else:
@@ -287,7 +287,7 @@ def sort_parcels_by_ts(
     with_ts: list[tuple[datetime, dict]] = []
     without_ts: list[dict] = []
     for parcel in parcels:
-        dt = _parse_iso(parcel.get(key_field))
+        dt = parse_iso(parcel.get(key_field))
         if dt is None:
             without_ts.append(parcel)
         else:
@@ -316,6 +316,6 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
         return [
             p
             for p in parcels
-            if (dt := _parse_iso(p.get("delivered_at"))) is None or dt >= cutoff
+            if (dt := parse_iso(p.get("delivered_at"))) is None or dt >= cutoff
         ]
     return parcels[:amount]
