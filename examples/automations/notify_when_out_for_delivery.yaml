@@ -8,10 +8,8 @@ max: 10
 triggers:
   - trigger: event
     event_type: trunkrs_parcel_status_changed
-
-conditions:
-  - condition: template
-    value_template: "{{ trigger.event.data.new_status == 'out_for_delivery' }}"
+    event_data:
+      new_status: out_for_delivery
 
 actions:
   - action: notify.mobile_app
