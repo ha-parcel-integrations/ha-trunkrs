@@ -51,7 +51,7 @@ def _coordinator(hass, client, entry) -> TrunkrsCoordinator:
 
 
 # ---------------------------------------------------------------------------
-# Dynamic polling (dynamic-polling.md Section 2.1, barcode-based) — pure
+# Dynamic polling (barcode-based) — pure
 # helpers
 # ---------------------------------------------------------------------------
 
