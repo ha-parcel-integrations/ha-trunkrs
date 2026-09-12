@@ -136,7 +136,11 @@ async def test_diagnostics_preserve_the_raw_payload(hass):
     entry = await _setup(hass)
     diag = await async_get_config_entry_diagnostics(hass, entry)
 
-    assert diag["counts"] == {"incoming_active": 1, "delivered": 0}
+    assert diag["counts"] == {
+        "incoming_active": 1,
+        "delivered": 0,
+        "skipped_from_fetch": 0,
+    }
     assert "shipmentFeatures" in diag["incoming"][0]["raw"]
     # The sharing note must point users at the issue tracker.
     assert "issues/new" in diag["note"]

@@ -140,6 +140,12 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         # failure keeps the parcel visible instead of dropping its sensor.
         # Lives for the integration's lifetime (resets on restart).
         self._raw_cache: dict[str, dict] = {}
+        # trunkrs_nr values confirmed delivered on a prior refresh — excluded
+        # from the fetch this cycle since a delivered parcel's payload can
+        # never change again. Keyed on trunkrs_nr (not the barcode — a
+        # never-scanned parcel has no barcode). Lives for the integration's
+        # lifetime (resets on restart).
+        self._delivered_codes: set[str] = set()
         # barcode -> last seen ParcelStatus / (planned_from, planned_to).
         # ``None`` on the first refresh so events are suppressed for parcels
         # that already existed when the integration started.
@@ -161,6 +167,11 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
     def current_tier_minutes(self) -> int | None:
         """Tier minutes computed on the last refresh (diagnostics only)."""
         return self._current_tier_minutes
+
+    @property
+    def delivered_codes(self) -> set[str]:
+        """trunkrs_nr values currently skipped from the fetch (diagnostics only)."""
+        return self._delivered_codes
 
     def _device_id(self) -> str | None:
         """Resolve (and cache) this entry's device id for event payloads."""
@@ -211,18 +222,28 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         self._raw_cache = {
             k: v for k, v in self._raw_cache.items() if k in tracked_numbers
         }
+        self._delivered_codes &= tracked_numbers
+
+        # A delivered parcel's payload can never change again, so it is
+        # dropped from the fetch — not from ``pairs``/the options list, which
+        # stays untouched until the user removes it by hand.
+        pairs_to_fetch = [
+            (trunkrs_nr, postal_code)
+            for trunkrs_nr, postal_code in pairs
+            if trunkrs_nr not in self._delivered_codes
+        ]
 
         results = await asyncio.gather(
             *(
                 self._client.async_get_parcel(trunkrs_nr, postal_code)
-                for trunkrs_nr, postal_code in pairs
+                for trunkrs_nr, postal_code in pairs_to_fetch
             ),
             return_exceptions=True,
         )
 
-        entries: list[tuple[str, dict]] = []
+        entries_by_nr: dict[str, dict] = {}
         errors = 0
-        for (trunkrs_nr, _), result in zip(pairs, results):
+        for (trunkrs_nr, _), result in zip(pairs_to_fetch, results):
             if isinstance(result, BaseException):
                 if not isinstance(result, (TrunkrsApiError, aiohttp.ClientError)):
                     raise result
@@ -240,33 +261,58 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
                     )
                 cached = self._raw_cache.get(trunkrs_nr)
                 if cached is not None:
-                    entries.append((trunkrs_nr, cached))
+                    entries_by_nr[trunkrs_nr] = cached
                 continue
 
             if result is None:
                 # Empty body — keep prior data if we have it, otherwise show a
                 # pending placeholder so the user still sees the tracked parcel.
-                entries.append((trunkrs_nr, self._raw_cache.get(trunkrs_nr) or {}))
+                entries_by_nr[trunkrs_nr] = self._raw_cache.get(trunkrs_nr) or {}
                 continue
 
             self._raw_cache[trunkrs_nr] = result
-            entries.append((trunkrs_nr, result))
+            entries_by_nr[trunkrs_nr] = result
 
-        if pairs and errors == len(pairs) and not entries:
+        # trunkrs_nr values skipped from the fetch above (already confirmed
+        # delivered) — re-add their cached payload so the delivered sensor
+        # keeps its data until the retention filter drops it.
+        for trunkrs_nr in self._delivered_codes:
+            cached = self._raw_cache.get(trunkrs_nr)
+            if cached is not None:
+                entries_by_nr[trunkrs_nr] = cached
+
+        if (
+            pairs_to_fetch
+            and errors == len(pairs_to_fetch)
+            and not entries_by_nr
+        ):
             raise UpdateFailed("Trunkrs unreachable for all tracked parcels")
 
+        # postal_code is uniform per hub (one CONF_POSTAL_CODE per entry), so
+        # any pair's second element works for entries served purely from cache.
+        postal_code_by_nr = dict(pairs)
         include_history = self._include_history
-        normalized = [
-            normalize_parcel(
-                raw,
-                trunkrs_nr=trunkrs_nr,
-                postal_code=postal_code,
-                include_history=include_history,
+        normalized_entries = [
+            (
+                trunkrs_nr,
+                normalize_parcel(
+                    raw,
+                    trunkrs_nr=trunkrs_nr,
+                    postal_code=postal_code_by_nr.get(trunkrs_nr, postal_code),
+                    include_history=include_history,
+                ),
             )
-            for trunkrs_nr, raw in entries
+            for trunkrs_nr, raw in entries_by_nr.items()
         ]
-        active = [p for p in normalized if not p["delivered"]]
-        delivered = [p for p in normalized if p["delivered"]]
+        active = [p for _, p in normalized_entries if not p["delivered"]]
+        delivered = [p for _, p in normalized_entries if p["delivered"]]
+        # Rebuilt fresh from this cycle's data — a trunkrs_nr whose payload
+        # just flipped to delivered is skipped starting next cycle; one that
+        # somehow un-delivers (should not happen, but the fetch list must
+        # never permanently drop a code) rejoins it automatically.
+        self._delivered_codes = {
+            trunkrs_nr for trunkrs_nr, p in normalized_entries if p["delivered"]
+        }
 
         self.delivered = self._apply_delivered_filter(
             sort_parcels_by_ts(delivered, "delivered_at", descending=True)
@@ -287,9 +333,9 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         }
 
         # Only stamp the diagnostic timestamp when at least one fetch actually
-        # succeeded (or nothing is tracked) — a poll that was served entirely
-        # from cache must not present itself as a successful update.
-        if not pairs or errors < len(pairs):
+        # succeeded (or nothing needed fetching) — a poll that was served
+        # entirely from cache must not present itself as a successful update.
+        if not pairs_to_fetch or errors < len(pairs_to_fetch):
             self.last_success_time = datetime.now(timezone.utc)
 
         now = dt_util.now()

@@ -433,6 +433,60 @@ async def test_no_tracked_parcels_is_not_a_failure(hass):
     assert coordinator.last_success_time is not None
 
 
+async def test_delivered_code_skipped_from_fetch(hass):
+    """A delivered trunkrs_nr stops being fetched from the next cycle on."""
+    client = AsyncMock()
+    client.async_get_parcel = AsyncMock(
+        side_effect=lambda trunkrs_nr, postal_code: (
+            IN_TRANSIT if trunkrs_nr == "TR1" else DELIVERED
+        )
+    )
+    entry = _entry(
+        hass,
+        parcels=[
+            {CONF_TRUNKRS_NR: "TR1", CONF_POSTAL_CODE: "1234AB"},
+            {CONF_TRUNKRS_NR: "TR2", CONF_POSTAL_CODE: "1234AB"},
+        ],
+        # Keep-most-recent-100 so the delivered-retention filter never trims
+        # the (old, fixed-date) sample parcel this test asserts on.
+        options={
+            CONF_DELIVERED_FILTER_TYPE: "parcels",
+            CONF_DELIVERED_FILTER_AMOUNT: 100,
+        },
+    )
+    coordinator = _coordinator(hass, client, entry)
+
+    await coordinator._async_update_data()
+    assert client.async_get_parcel.await_count == 2
+    assert coordinator.delivered_codes == {"TR2"}
+
+    client.async_get_parcel.reset_mock()
+    data = await coordinator._async_update_data()
+
+    # Only the still-active trunkrs_nr is fetched — the delivered one is
+    # skipped.
+    client.async_get_parcel.assert_called_once_with("TR1", "1234AB")
+    assert any(p["barcode"] == "TR2" for p in coordinator.delivered)
+    assert data[0]["barcode"] == "TR1"
+
+
+async def test_delivered_code_forgotten_when_untracked(hass):
+    """Untracking a delivered trunkrs_nr drops it from the skip set too."""
+    client = AsyncMock()
+    client.async_get_parcel = AsyncMock(return_value=DELIVERED)
+    entry = _entry(hass)
+    coordinator = _coordinator(hass, client, entry)
+
+    await coordinator._async_update_data()
+    assert coordinator.delivered_codes == {"TR123"}
+
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, CONF_PARCELS: []}
+    )
+    await coordinator._async_update_data()
+    assert coordinator.delivered_codes == set()
+
+
 # --- events ----------------------------------------------------------------
 
 
