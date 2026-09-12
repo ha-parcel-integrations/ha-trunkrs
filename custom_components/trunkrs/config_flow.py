@@ -39,12 +39,6 @@ _LOGGER = logging.getLogger(__name__)
 # is confirmed to work against the same endpoint.
 _POSTCODE_RE = re.compile(r"^\d{4}[A-Z]{2}$")
 
-# The exact Trunkrs-number format is not documented and we have not seen
-# enough real numbers to pin it down, so this is deliberately permissive —
-# the real check is the API's own ``/tracing/verify`` call, which tells us
-# authoritatively whether a number + postcode pair exists.
-_TRUNKRS_NR_RE = re.compile(r"^[A-Z0-9][A-Z0-9-]{3,29}$")
-
 _HUB_SCHEMA = vol.Schema({vol.Required(CONF_POSTAL_CODE): str})
 
 
@@ -59,8 +53,13 @@ def normalize_trunkrs_nr(value: str) -> str:
 
 
 def valid_trunkrs_nr(value: str) -> bool:
-    """Whether ``value`` is shaped like a Trunkrs number (cheap pre-check)."""
-    return bool(_TRUNKRS_NR_RE.match(value))
+    """Accept any non-empty Trunkrs number.
+
+    The exact format is not documented and varies too much to gate on
+    client-side; the real check is the API's own ``/tracing/verify`` call,
+    which tells us authoritatively whether a number + postcode pair exists.
+    """
+    return bool(value)
 
 
 def valid_postcode(value: str) -> bool:

@@ -78,11 +78,11 @@ async def test_track_is_a_noop_for_an_already_tracked_parcel(hass):
     assert len(entry.options[CONF_PARCELS]) == 1
 
 
-async def test_track_rejects_an_invalid_number(hass):
+async def test_track_rejects_an_empty_number(hass):
     _entry(hass)
     async_setup_services(hass)
     with pytest.raises(ServiceValidationError):
-        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "!!"})
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: ""})
 
 
 async def test_track_without_a_hub_raises(hass):

@@ -37,8 +37,8 @@ def test_postcode_validation():
 
 def test_trunkrs_nr_validation():
     assert valid_trunkrs_nr("TR123456")
-    assert not valid_trunkrs_nr("AB")          # too short
-    assert not valid_trunkrs_nr("has space")   # invalid character
+    assert valid_trunkrs_nr("AB")
+    assert not valid_trunkrs_nr("")
 
 
 # --- config flow -----------------------------------------------------------
