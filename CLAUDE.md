@@ -97,7 +97,7 @@ Where this repo diverges from it, that is recorded below under
   check against the one confirmed terminal state, not a guess. An unmapped
   status still reports `delivered: False`, so no parcel is wrongly filed as
   completed and vanishes from view.
-- **No pickup sensors** (unlike GLS's `en_route_to_parcel_shop` / `awaiting_pickup`)
+- **No pickup sensors** (unlike GLS's `en_route_to_pickup_point` / `awaiting_pickup`)
   — we don't yet know whether Trunkrs exposes pickup points; two permanently-zero
   sensors are worse than adding them later.
 - **Diagnostics is the collection mechanism**, not just debugging: it carries the
