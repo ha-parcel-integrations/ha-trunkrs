@@ -11,12 +11,9 @@ A custom Home Assistant integration that tracks your [Trunkrs](https://trunkrs.n
 
 Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) family: it publishes the same canonical parcel format, statuses and events as the other carrier integrations, so it plugs straight into the [Parcel Aggregator](https://github.com/ha-parcel-integrations/ha-parcel-aggregator) and cross-carrier automations.
 
-> ### ⚠️ Early release — one thing still incomplete
->
-> The integration is functional: parcels are validated, polled and mapped —
-> sender, receiver, delivery window, history and the delivered state all work.
->
-> What is still incomplete is the **status vocabulary**. Only
+> ⚠️ **Pre-1.0 release.** Parcels are validated, polled and mapped — sender,
+> receiver, delivery window, history and the delivered state all work. What is
+> still incomplete is the **status vocabulary**: only
 > `SHIPMENT_DELIVERED`, `SHIPMENT_SORTED`, `SHIPMENT_ACCEPTED_BY_DRIVER` and
 > `SHIPMENT_SORTED_AT_SUB_DEPOT` have been observed so far, so a parcel in any
 > other state reports **`unknown`** (it is never wrongly marked delivered).
