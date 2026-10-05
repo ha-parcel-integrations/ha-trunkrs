@@ -38,6 +38,9 @@ _LOGGER = logging.getLogger(__name__)
 # a one-shot warning with a copy-paste issue link — so the rest of the
 # vocabulary collects itself from real users. Add each confirmed value here.
 _STATUS_MAP: dict[str, ParcelStatus] = {
+    # Confirmed in issue #11: the merchant's shipment data is in ("Verwacht"),
+    # the parcel itself has not reached Trunkrs yet.
+    "DATA_PROCESSED": ParcelStatus.REGISTERED,
     "SHIPMENT_DELIVERED": ParcelStatus.DELIVERED,
     # Confirmed in issue #5: parcel at the sort facility, not yet on a
     # delivery vehicle — still "in the carrier's network".

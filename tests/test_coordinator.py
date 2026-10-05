@@ -141,6 +141,14 @@ def test_normalize_falls_back_to_the_wide_delivery_window():
     assert parcel["planned_to"] == "2026-07-10T20:30:00.000Z"
 
 
+def test_data_processed_maps_to_registered():
+    """Confirmed in issue #11: shipment data received, parcel not handed over yet."""
+    payload = {**DELIVERED, "currentState": {"stateName": "DATA_PROCESSED"}}
+    parcel = normalize_parcel(payload, trunkrs_nr="TR123")
+    assert parcel["status"] == ParcelStatus.REGISTERED
+    assert parcel["delivered"] is False
+
+
 def test_accepted_by_driver_maps_to_out_for_delivery():
     """Confirmed in issue #6: the driver has the parcel on today's route."""
     payload = {**DELIVERED, "currentState": {"stateName": "SHIPMENT_ACCEPTED_BY_DRIVER"}}

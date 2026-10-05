@@ -7,10 +7,11 @@ inbox), built on the GLS/Dragonfly shape. No DTO layer.
 ## ⚠️ Status vocabulary is still incomplete
 
 Field mapping is **done** (`carrier-research/trunkrs/api/tracing_details.md`). What remains is the
-**status vocabulary**: `_STATUS_MAP` (`parcels.py`) holds four confirmed values —
-`SHIPMENT_DELIVERED`, `SHIPMENT_SORTED` (#5), `SHIPMENT_ACCEPTED_BY_DRIVER`
-and `SHIPMENT_SORTED_AT_SUB_DEPOT` (both #6) — mapping to `DELIVERED`,
-`IN_TRANSIT`, `OUT_FOR_DELIVERY` and `IN_TRANSIT` respectively; everything else
+**status vocabulary**: `_STATUS_MAP` (`parcels.py`) holds five confirmed values —
+`DATA_PROCESSED` (#11), `SHIPMENT_DELIVERED`, `SHIPMENT_SORTED` (#5),
+`SHIPMENT_ACCEPTED_BY_DRIVER` and `SHIPMENT_SORTED_AT_SUB_DEPOT` (both #6) —
+mapping to `REGISTERED`, `DELIVERED`, `IN_TRANSIT`, `OUT_FOR_DELIVERY` and
+`IN_TRANSIT` respectively; everything else
 reports `unknown` + a one-shot warning. **Do not add speculative `SHIPMENT_*`
 entries** — a wrong guess silently reports the wrong status, while `unknown` is
 honest and collects real names from users. Add a value only when confirmed
@@ -22,15 +23,16 @@ History is 0.11.0 → 0.12.0 → 1.0.0, so this was **not** a first release and
 the "first release may jump straight to 1.0.0" exception in
 `CONVENTIONS.md` does not apply. The normal bar — status vocabulary
 complete, mapping cleanly onto every canonical `ParcelStatus` — is not met:
-`_STATUS_MAP` (`parcels.py`) covers three of the eight canonical statuses
-(DELIVERED, IN_TRANSIT, OUT_FOR_DELIVERY, from four confirmed raw values).
+`_STATUS_MAP` (`parcels.py`) covers four of the eight canonical statuses
+(REGISTERED, DELIVERED, IN_TRANSIT, OUT_FOR_DELIVERY, from five confirmed raw
+values).
 RETURNING and PROBLEM have zero confirmed raw triggers, and the whole
 failed/not-delivered vocabulary (`reasonCode`, see `_note_reason_code`) is
 unconfirmed.
 
 **Decision: the version stays at 1.0.0 anyway.** The confirmed values cover
-the normal happy-path delivery flow (sorted → out for delivery →
-delivered), and every unmapped raw status already degrades safely to
+the normal happy-path delivery flow (data processed → sorted → out for
+delivery → delivered), and every unmapped raw status already degrades safely to
 `unknown` plus a one-shot warning rather than a silently wrong guess — the
 same pre-1.0 discipline carried forward unchanged, version bump aside. This
 is the maintainer knowingly accepting that `status_vocab` is not provably
