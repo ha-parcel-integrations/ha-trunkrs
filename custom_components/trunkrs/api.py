@@ -50,14 +50,15 @@ class TrunkrsApiClient:
     async def async_verify(self, trunkrs_nr: str, postal_code: str) -> bool:
         """Return whether the number/postcode pair is known to Trunkrs.
 
-        ``True`` on HTTP 200, ``False`` on 401/403. Any other non-200 raises
+        ``True`` on any 2xx (Trunkrs answers 204 as well as 200), ``False``
+        on 401/403. Any other non-200 raises
         :class:`TrunkrsApiError` so a service outage is not reported to the
         user as "invalid parcel number".
         """
         async with self._session.get(
             VERIFY_URL, auth=self._auth(trunkrs_nr, postal_code)
         ) as response:
-            if response.status == 200:
+            if 200 <= response.status < 300:
                 return True
             if response.status in (401, 403):
                 return False

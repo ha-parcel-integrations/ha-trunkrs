@@ -45,8 +45,10 @@ async def test_basic_auth_is_number_and_postcode():
 # --- verify ----------------------------------------------------------------
 
 
-async def test_verify_true_on_200():
-    client = TrunkrsApiClient(_session(200))
+@pytest.mark.parametrize("status", [200, 204])
+async def test_verify_true_on_success(status):
+    """Confirmed in issue #11: a valid pair can come back as 204 No Content."""
+    client = TrunkrsApiClient(_session(status))
     assert await client.async_verify("TR123", "1234AB") is True
 
 
