@@ -9,13 +9,13 @@
           "postal_code": "Postal code"
         },
         "data_description": {
-          "postal_code": "e.g. 1234AB. Used as the default delivery address for parcels you add."
+          "postal_code": "e.g. 1234AB or 9000. Used as the default delivery address for parcels you add."
         }
       }
     },
     "error": {
       "cannot_connect": "Unable to reach Trunkrs. Check your network.",
-      "invalid_postcode": "Enter a valid Dutch postal code, e.g. 1234AB."
+      "invalid_postcode": "Enter a valid Dutch or Belgian postal code, e.g. 1234AB or 9000."
     },
     "abort": {
       "already_configured": "A Trunkrs hub for this postal code is already set up."

@@ -31,7 +31,9 @@ def test_normalizers():
 
 def test_postcode_validation():
     assert valid_postcode("1234AB")
-    assert not valid_postcode("1234")
+    assert valid_postcode("9000")
+    assert not valid_postcode("123")
+    assert not valid_postcode("1234A")
     assert not valid_postcode("ABCDEF")
 
 
@@ -57,6 +59,18 @@ async def test_create_hub(hass):
     assert result["title"] == "Trunkrs (1234AB)"
     assert result["options"][CONF_POSTAL_CODE] == "1234AB"
     assert result["options"][CONF_PARCELS] == []
+
+
+async def test_create_belgian_hub(hass):
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_POSTAL_CODE: "9000"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Trunkrs (9000)"
+    assert result["options"][CONF_POSTAL_CODE] == "9000"
 
 
 async def test_invalid_postcode_shows_error(hass):

@@ -54,7 +54,7 @@ Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) 
 
 ## Requirements
 
-- A Trunkrs parcel and its Trunkrs number, plus the delivery postal code (e.g. `1234AB`) — no account needed
+- A Trunkrs parcel and its Trunkrs number, plus the delivery postal code (e.g. `1234AB`, or `9000` in Belgium) — no account needed
 
 ## Installation
 

@@ -1,6 +1,6 @@
 # Working in this repository
 
-Home Assistant custom integration for **Trunkrs** (NL same-day courier) parcel
+Home Assistant custom integration for **Trunkrs** (NL/BE same-day courier) parcel
 tracking. Distributed via HACS; not part of HA core. Code-based carrier (no
 inbox), built on the GLS/Dragonfly shape. No DTO layer.
 

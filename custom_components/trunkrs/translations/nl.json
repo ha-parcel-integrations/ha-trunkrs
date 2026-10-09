@@ -9,13 +9,13 @@
           "postal_code": "Postcode"
         },
         "data_description": {
-          "postal_code": "Bijv. 1234AB. Wordt gebruikt als standaard bezorgadres voor pakketten die je toevoegt."
+          "postal_code": "Bijv. 1234AB of 9000. Wordt gebruikt als standaard bezorgadres voor pakketten die je toevoegt."
         }
       }
     },
     "error": {
       "cannot_connect": "Trunkrs is niet bereikbaar. Controleer je netwerk.",
-      "invalid_postcode": "Vul een geldige Nederlandse postcode in, bijv. 1234AB."
+      "invalid_postcode": "Vul een geldige Nederlandse of Belgische postcode in, bijv. 1234AB of 9000."
     },
     "abort": {
       "already_configured": "Er is al een Trunkrs-hub voor deze postcode ingesteld."

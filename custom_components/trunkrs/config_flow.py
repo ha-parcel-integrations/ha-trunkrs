@@ -34,10 +34,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Trunkrs delivers in the Netherlands, so the hub postcode is validated as an
-# NL one (``1234AB``). Broaden this when Trunkrs coverage in another country
-# is confirmed to work against the same endpoint.
-_POSTCODE_RE = re.compile(r"^\d{4}[A-Z]{2}$")
+# Trunkrs delivers in the Netherlands (``1234AB``) and Belgium (``1234``),
+# both through the same endpoint, so either shape is accepted.
+_POSTCODE_RE = re.compile(r"^\d{4}(?:[A-Z]{2})?$")
 
 _HUB_SCHEMA = vol.Schema({vol.Required(CONF_POSTAL_CODE): str})
 
@@ -63,7 +62,7 @@ def valid_trunkrs_nr(value: str) -> bool:
 
 
 def valid_postcode(value: str) -> bool:
-    """Whether ``value`` is a valid Dutch postcode."""
+    """Whether ``value`` is a valid Dutch or Belgian postcode."""
     return bool(_POSTCODE_RE.match(value))
 
 
