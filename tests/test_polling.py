@@ -3,11 +3,13 @@
 Pure-function tests for the tiering/scheduling helpers, plus a few
 integration checks that ``_async_update_data`` actually wires them up.
 """
+
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.trunkrs import parcels as parcels_module
 from custom_components.trunkrs.const import (
     CONF_PARCELS,
     CONF_POSTAL_CODE,
@@ -120,7 +122,10 @@ def test_tier_is_mid_before_lookahead_of_planned_from():
 
 
 def test_next_update_interval_is_none_for_none_tier():
-    assert _next_update_interval(datetime(2026, 1, 1, 12, tzinfo=UTC), None, "entry-1") is None
+    assert (
+        _next_update_interval(datetime(2026, 1, 1, 12, tzinfo=UTC), None, "entry-1")
+        is None
+    )
 
 
 def test_daytime_candidate_outside_window_is_tier_plus_stagger():
@@ -190,8 +195,6 @@ async def test_polling_is_hot_for_an_out_for_delivery_parcel(hass, monkeypatch):
     ``out_for_delivery`` yet (see parcels.py's ``_STATUS_MAP``), so this
     temporarily maps one to exercise the hot tier the same way it will work
     once a real one is confirmed — the tier logic itself is carrier-agnostic."""
-    from custom_components.trunkrs import parcels as parcels_module
-
     monkeypatch.setitem(
         parcels_module._STATUS_MAP,
         "SHIPMENT_OUT_FOR_DELIVERY",

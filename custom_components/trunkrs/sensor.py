@@ -1,4 +1,5 @@
 """Sensor platform for the Trunkrs parcel tracker integration."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -27,8 +28,6 @@ from .parcels import parse_iso
 PARALLEL_UPDATES = 0
 
 
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: TrunkrsConfigEntry,
@@ -40,9 +39,7 @@ async def async_setup_entry(
     # than (too late) from this forwarded platform.
     coordinator = entry.runtime_data.coordinator
 
-    current_barcodes: set[str] = {
-        p.get("barcode", "") for p in coordinator.data or []
-    }
+    current_barcodes: set[str] = {p.get("barcode", "") for p in coordinator.data or []}
     entry_id = entry.entry_id
 
     # Remove per-parcel sensors from the registry whose barcode is no longer
@@ -62,7 +59,7 @@ async def async_setup_entry(
             and entity_entry.unique_id.startswith(f"{entry_id}_")
             and entity_entry.unique_id not in non_parcel_unique_ids
         ):
-            barcode = entity_entry.unique_id[len(f"{entry_id}_"):]
+            barcode = entity_entry.unique_id[len(f"{entry_id}_") :]
             if barcode not in current_barcodes:
                 registry.async_remove(entity_entry.entity_id)
 
@@ -71,10 +68,10 @@ async def async_setup_entry(
             coordinator, entry, async_add_entities, current_barcodes
         )
     ]
-    for parcel in coordinator.data or []:
-        entities.append(
-            TrunkrsParcelSensor(coordinator, entry, parcel.get("barcode", ""))
-        )
+    entities.extend(
+        TrunkrsParcelSensor(coordinator, entry, parcel.get("barcode", ""))
+        for parcel in coordinator.data or []
+    )
     entities.append(TrunkrsNextDeliverySensor(coordinator, entry))
     entities.append(TrunkrsDeliveredParcelsSensor(coordinator, entry))
     entities.append(TrunkrsLastUpdateSensor(coordinator, entry))
@@ -82,9 +79,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class TrunkrsIncomingParcelsSensor(
-    CoordinatorEntity[TrunkrsCoordinator], SensorEntity
-):
+class TrunkrsIncomingParcelsSensor(CoordinatorEntity[TrunkrsCoordinator], SensorEntity):
     """Summary sensor: count of active (not-yet-delivered) tracked parcels.
 
     Spawns a per-parcel sensor for each new barcode and removes stale ones from

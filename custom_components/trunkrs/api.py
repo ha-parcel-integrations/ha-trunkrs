@@ -4,6 +4,7 @@ No account and no API key: a parcel is addressed by HTTP Basic auth, where the
 username is the Trunkrs number and the password is the receiver's postcode
 (see ``const.py``). One credential pair identifies exactly one parcel.
 """
+
 from __future__ import annotations
 
 import logging

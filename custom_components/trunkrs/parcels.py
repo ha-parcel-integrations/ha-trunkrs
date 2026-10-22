@@ -6,10 +6,11 @@ out of ``coordinator.py`` lets it be unit-tested as plain functions and mirrors
 the layout every other carrier in the suite uses. The coordinator only fetches,
 caches and fires events.
 """
+
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import logging
-from datetime import datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 
@@ -88,7 +89,7 @@ _reason_code_logged = False
 
 def _note_reason_code(raw: dict) -> None:
     """One-shot: report a delivery reasonCode we have not mapped yet."""
-    global _reason_code_logged
+    global _reason_code_logged  # noqa: PLW0603 - one-shot module-level flag
     if _reason_code_logged:
         return
     sources = [raw.get("currentState") or {}]
@@ -152,11 +153,11 @@ def parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(str(value))
     except ValueError:
         return None
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt
 
 
@@ -308,14 +309,12 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
     only controls what the delivered sensor shows.
     """
     options = entry.options
-    filter_type = options.get(
-        CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
-    )
+    filter_type = options.get(CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE)
     amount = int(
         options.get(CONF_DELIVERED_FILTER_AMOUNT, DEFAULT_DELIVERED_FILTER_AMOUNT)
     )
     if filter_type == "days":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=amount)
+        cutoff = datetime.now(UTC) - timedelta(days=amount)
         return [
             p
             for p in parcels

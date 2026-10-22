@@ -4,7 +4,8 @@ Like the calendar, these paths are payload-independent: they operate on
 *normalised* parcel dicts, so they can be exercised fully today by driving the
 coordinator directly.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.helpers import entity_registry as er
@@ -102,9 +103,7 @@ async def test_summary_removes_sensors_for_gone_barcodes(hass):
     registry.async_get_or_create(
         "sensor", DOMAIN, f"{entry.entry_id}_TR1", config_entry=entry
     )
-    entity_id = registry.async_get_entity_id(
-        "sensor", DOMAIN, f"{entry.entry_id}_TR1"
-    )
+    entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_TR1")
     assert entity_id is not None
 
     coordinator.data = []
@@ -119,7 +118,7 @@ async def test_summary_removes_sensors_for_gone_barcodes(hass):
 
 async def test_next_delivery_picks_the_earliest(hass):
     entry = _entry(hass)
-    base = datetime.now(timezone.utc)
+    base = datetime.now(UTC)
     coordinator = _coordinator(
         hass,
         entry,
@@ -156,7 +155,7 @@ async def test_next_delivery_assumes_utc_for_naive_timestamps(hass):
     )
     sensor = TrunkrsNextDeliverySensor(coordinator, entry)
 
-    assert sensor.native_value == datetime(2026, 5, 1, 10, 0, tzinfo=timezone.utc)
+    assert sensor.native_value == datetime(2026, 5, 1, 10, 0, tzinfo=UTC)
 
 
 # --- setup-time cleanup of stale entities ----------------------------------

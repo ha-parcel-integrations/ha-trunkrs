@@ -1,4 +1,5 @@
 """Tests for the Trunkrs entity platforms and diagnostics."""
+
 from unittest.mock import AsyncMock, patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -14,9 +15,7 @@ from custom_components.trunkrs.device_trigger import (
     TRIGGER_TYPES,
     async_get_triggers,
 )
-from custom_components.trunkrs.diagnostics import (
-    async_get_config_entry_diagnostics,
-)
+from custom_components.trunkrs.diagnostics import async_get_config_entry_diagnostics
 
 from .payloads import IN_TRANSIT as _PAYLOAD
 
@@ -86,9 +85,7 @@ async def test_refresh_button_triggers_a_poll(hass):
     entry = await _setup(hass)
     coordinator = entry.runtime_data.coordinator
 
-    with patch.object(
-        coordinator, "async_request_refresh", new=AsyncMock()
-    ) as refresh:
+    with patch.object(coordinator, "async_request_refresh", new=AsyncMock()) as refresh:
         await hass.services.async_call(
             "button",
             "press",
@@ -112,12 +109,12 @@ async def test_calendar_is_empty_without_delivery_windows(hass):
 
 async def test_device_triggers_cover_every_fired_event():
     """Each bus event the coordinator fires is exposed as a device trigger."""
-    assert TRIGGER_TYPES == {
+    assert {
         "parcel_registered",
         "parcel_status_changed",
         "parcel_delivered",
         "parcel_delivery_time_changed",
-    }
+    } == TRIGGER_TYPES
     for trigger_type, event in TRIGGER_EVENTS.items():
         assert event == f"{DOMAIN}_{trigger_type}"
 

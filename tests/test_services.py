@@ -1,8 +1,9 @@
 """Tests for the Trunkrs track/untrack services."""
+
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant.exceptions import ServiceValidationError
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.trunkrs.const import (
@@ -49,9 +50,11 @@ async def test_track_rejects_a_parcel_trunkrs_does_not_know(hass):
     _entry(hass)
     async_setup_services(hass)
 
-    with patch(_VERIFY, new=AsyncMock(return_value=False)):
-        with pytest.raises(ServiceValidationError):
-            await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR999999"})
+    with (
+        patch(_VERIFY, new=AsyncMock(return_value=False)),
+        pytest.raises(ServiceValidationError),
+    ):
+        await _call(hass, SERVICE_TRACK_PARCEL, {CONF_TRACKING_CODE: "TR999999"})
 
 
 async def test_track_accepts_when_trunkrs_is_unreachable(hass):

@@ -4,18 +4,15 @@
 contract can be verified today by driving it directly — independent of the
 missing payload mapping.
 """
-from unittest.mock import AsyncMock
+
+from unittest.mock import AsyncMock, patch
 
 import aiohttp
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.trunkrs.api import TrunkrsApiError
 from custom_components.trunkrs.config_flow import async_verify_parcel
-from custom_components.trunkrs.const import (
-    CONF_POSTAL_CODE,
-    DOMAIN,
-    ParcelStatus,
-)
+from custom_components.trunkrs.const import CONF_POSTAL_CODE, DOMAIN, ParcelStatus
 from custom_components.trunkrs.coordinator import TrunkrsCoordinator
 
 
@@ -112,7 +109,11 @@ async def test_new_eta_fires_delivery_time_changed(hass):
     events = _listen(hass, "parcel_delivery_time_changed")
 
     coordinator._fire_change_events(
-        [_parcel(planned_from="2026-05-01T10:00:00Z", planned_to="2026-05-01T12:00:00Z")]
+        [
+            _parcel(
+                planned_from="2026-05-01T10:00:00Z", planned_to="2026-05-01T12:00:00Z"
+            )
+        ]
     )
     await hass.async_block_till_done()
 
@@ -143,8 +144,6 @@ async def test_verify_helper_returns_none_when_trunkrs_errors(hass):
     client.async_verify = AsyncMock(side_effect=TrunkrsApiError(500))
     with_patch = "custom_components.trunkrs.config_flow.TrunkrsApiClient"
 
-    from unittest.mock import patch
-
     with patch(with_patch, return_value=client):
         assert await async_verify_parcel(hass, "TR1", "1234AB") is None
 
@@ -152,8 +151,6 @@ async def test_verify_helper_returns_none_when_trunkrs_errors(hass):
 async def test_verify_helper_returns_none_on_network_error(hass):
     client = AsyncMock()
     client.async_verify = AsyncMock(side_effect=aiohttp.ClientError("boom"))
-
-    from unittest.mock import patch
 
     with patch(
         "custom_components.trunkrs.config_flow.TrunkrsApiClient", return_value=client
@@ -164,8 +161,6 @@ async def test_verify_helper_returns_none_on_network_error(hass):
 async def test_verify_helper_passes_through_a_definite_answer(hass):
     client = AsyncMock()
     client.async_verify = AsyncMock(return_value=False)
-
-    from unittest.mock import patch
 
     with patch(
         "custom_components.trunkrs.config_flow.TrunkrsApiClient", return_value=client

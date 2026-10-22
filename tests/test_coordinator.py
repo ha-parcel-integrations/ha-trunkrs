@@ -1,11 +1,13 @@
 """Tests for the Trunkrs coordinator logic."""
+
 from unittest.mock import AsyncMock
 
 import aiohttp
-import pytest
 from homeassistant.helpers.update_coordinator import UpdateFailed
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.trunkrs import parcels
 from custom_components.trunkrs.api import TrunkrsApiError, TrunkrsAuthError
 from custom_components.trunkrs.const import (
     CAPABILITIES,
@@ -151,14 +153,20 @@ def test_data_processed_maps_to_registered():
 
 def test_accepted_by_driver_maps_to_out_for_delivery():
     """Confirmed in issue #6: the driver has the parcel on today's route."""
-    payload = {**DELIVERED, "currentState": {"stateName": "SHIPMENT_ACCEPTED_BY_DRIVER"}}
+    payload = {
+        **DELIVERED,
+        "currentState": {"stateName": "SHIPMENT_ACCEPTED_BY_DRIVER"},
+    }
     parcel = normalize_parcel(payload, trunkrs_nr="TR123")
     assert parcel["status"] == ParcelStatus.OUT_FOR_DELIVERY
 
 
 def test_sorted_at_sub_depot_maps_to_in_transit():
     """Confirmed in issue #6: same network stage as SHIPMENT_SORTED."""
-    payload = {**DELIVERED, "currentState": {"stateName": "SHIPMENT_SORTED_AT_SUB_DEPOT"}}
+    payload = {
+        **DELIVERED,
+        "currentState": {"stateName": "SHIPMENT_SORTED_AT_SUB_DEPOT"},
+    }
     parcel = normalize_parcel(payload, trunkrs_nr="TR123")
     assert parcel["status"] == ParcelStatus.IN_TRANSIT
 
@@ -194,9 +202,9 @@ def test_trunkrs_exposes_no_pickup_or_weight():
 
 def test_normalize_history_is_opt_in():
     assert normalize_parcel(DELIVERED, trunkrs_nr="TR123")["history"] is None
-    assert normalize_parcel(
-        DELIVERED, trunkrs_nr="TR123", include_history=True
-    )["history"] == [
+    assert normalize_parcel(DELIVERED, trunkrs_nr="TR123", include_history=True)[
+        "history"
+    ] == [
         {
             "timestamp": "2026-07-10T17:46:17.864Z",
             "status": ParcelStatus.DELIVERED,
@@ -251,8 +259,6 @@ def test_map_parcel_status_sorted_is_in_transit():
 
 
 def test_map_parcel_status_unmapped_warns_once(caplog):
-    from custom_components.trunkrs import parcels
-
     parcels._unmapped_statuses_logged.clear()
     assert map_parcel_status("SOMETHING_NEW") == ParcelStatus.UNKNOWN
     assert map_parcel_status("SOMETHING_NEW") == ParcelStatus.UNKNOWN
@@ -268,11 +274,12 @@ def test_map_event_status_returns_none_for_unmapped():
 def test_reason_code_warns_once(caplog):
     """A delivery reasonCode (the failed-state vocabulary we still need) is
     flagged once, with the state:reason pair and an issue link."""
-    from custom_components.trunkrs import parcels
-
     parcels._reason_code_logged = False
     raw = {
-        "currentState": {"stateName": "SHIPMENT_NOT_DELIVERED", "reasonCode": "NOBODY_HOME"},
+        "currentState": {
+            "stateName": "SHIPMENT_NOT_DELIVERED",
+            "reasonCode": "NOBODY_HOME",
+        },
         "deliveryAttempts": [],
     }
     normalize_parcel(raw, trunkrs_nr="TR123")
@@ -284,8 +291,6 @@ def test_reason_code_warns_once(caplog):
 
 def test_reason_code_absent_is_silent(caplog):
     """A payload without a reasonCode logs nothing."""
-    from custom_components.trunkrs import parcels
-
     parcels._reason_code_logged = False
     normalize_parcel(DELIVERED, trunkrs_nr="TR123")
     assert "delivery reasonCode" not in caplog.text
@@ -344,7 +349,7 @@ async def test_delivered_filter_by_days_keeps_unparseable(hass):
     coordinator = _coordinator(hass, AsyncMock(), entry)
     parcels = [
         {"delivered_at": "1999-01-01T10:00:00Z"},  # far too old → dropped
-        {"delivered_at": None},                     # unknown → kept
+        {"delivered_at": None},  # unknown → kept
     ]
     kept = coordinator._apply_delivered_filter(parcels)
     assert kept == [{"delivered_at": None}]
@@ -546,4 +551,4 @@ def test_capabilities_are_known_values():
 
 def test_capabilities_are_delivery_window_url_and_history():
     """Home-delivery courier: no pickup point, weight or dimensions in the payload."""
-    assert CAPABILITIES == {"delivery_window", "url", "history"}
+    assert {"delivery_window", "url", "history"} == CAPABILITIES

@@ -5,6 +5,7 @@ Doubles as the mechanism for finishing this integration: the raw
 user who downloads diagnostics and attaches it to a GitHub issue gives us
 exactly what is needed to write the field mapping (see ``coordinator.py``).
 """
+
 from __future__ import annotations
 
 from typing import Any

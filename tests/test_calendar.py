@@ -4,7 +4,8 @@ The calendar is payload-independent: it reads the *normalised* parcel dicts,
 so it can be tested fully today by injecting parcels with delivery windows —
 even though the field mapping that produces them is not written yet.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -40,7 +41,7 @@ def _parcel(barcode="TR1", start=None, end=None, **extra) -> dict:
 
 # One fixed base instant, so offsets are exact — computing now() per call
 # leaves microsecond drift between a start and its end.
-_BASE = datetime.now(timezone.utc)
+_BASE = datetime.now(UTC)
 
 
 def _iso(offset_hours: int) -> str:
@@ -122,10 +123,8 @@ async def test_get_events_filters_by_range(hass):
             _parcel(barcode="out", start=_iso(100)),
         ],
     )
-    now = datetime.now(timezone.utc)
-    events = await calendar.async_get_events(
-        hass, now, now + timedelta(hours=5)
-    )
+    now = datetime.now(UTC)
+    events = await calendar.async_get_events(hass, now, now + timedelta(hours=5))
     assert [e.summary for e in events] == ["Parcel in"]
 
 

@@ -1,4 +1,5 @@
 """Tests for Trunkrs setup and unload."""
+
 from unittest.mock import AsyncMock, patch
 
 import aiohttp

@@ -1,4 +1,5 @@
 """Tests for the Trunkrs API client."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp

@@ -1,4 +1,5 @@
 """Calendar platform for the Trunkrs parcel tracker integration."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -31,9 +32,7 @@ async def async_setup_entry(
     )
 
 
-class TrunkrsDeliveriesCalendar(
-    CoordinatorEntity[TrunkrsCoordinator], CalendarEntity
-):
+class TrunkrsDeliveriesCalendar(CoordinatorEntity[TrunkrsCoordinator], CalendarEntity):
     """A read-only calendar of expected Trunkrs deliveries.
 
     Each active tracked parcel with a known delivery moment becomes an event.

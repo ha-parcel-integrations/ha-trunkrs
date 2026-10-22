@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime, timedelta
 import hashlib
 import logging
-from datetime import datetime, timedelta, timezone
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -53,10 +53,9 @@ def _next_anchor(now: datetime) -> datetime:
     )
     if now < six_today:
         return six_today
-    midnight_tomorrow = (now + timedelta(days=1)).replace(
+    return (now + timedelta(days=1)).replace(
         hour=QUIET_WINDOW_START_HOUR, minute=0, second=0, microsecond=0
     )
-    return midnight_tomorrow
 
 
 def _hottest_tier_minutes(active_parcels: list[dict], now: datetime) -> int | None:
@@ -243,7 +242,7 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
 
         entries_by_nr: dict[str, dict] = {}
         errors = 0
-        for (trunkrs_nr, _), result in zip(pairs_to_fetch, results):
+        for (trunkrs_nr, _), result in zip(pairs_to_fetch, results, strict=True):
             if isinstance(result, BaseException):
                 if not isinstance(result, (TrunkrsApiError, aiohttp.ClientError)):
                     raise result
@@ -281,11 +280,7 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
             if cached is not None:
                 entries_by_nr[trunkrs_nr] = cached
 
-        if (
-            pairs_to_fetch
-            and errors == len(pairs_to_fetch)
-            and not entries_by_nr
-        ):
+        if pairs_to_fetch and errors == len(pairs_to_fetch) and not entries_by_nr:
             raise UpdateFailed("Trunkrs unreachable for all tracked parcels")
 
         # postal_code is uniform per hub (one CONF_POSTAL_CODE per entry), so
@@ -336,7 +331,7 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         # succeeded (or nothing needed fetching) — a poll that was served
         # entirely from cache must not present itself as a successful update.
         if not pairs_to_fetch or errors < len(pairs_to_fetch):
-            self.last_success_time = datetime.now(timezone.utc)
+            self.last_success_time = datetime.now(UTC)
 
         now = dt_util.now()
         self._current_tier_minutes = _hottest_tier_minutes(normalized_active, now)

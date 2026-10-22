@@ -5,6 +5,7 @@ One place, because sensors, the button and the calendar must all land on the
 and the calendar had to import from the sensor platform — a dependency neither
 of them has any other reason to carry.
 """
+
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry

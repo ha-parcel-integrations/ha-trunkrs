@@ -1,4 +1,5 @@
 """Button platform for the Trunkrs parcel tracker integration."""
+
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
