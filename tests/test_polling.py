@@ -5,8 +5,9 @@ integration checks that ``_async_update_data`` actually wires them up.
 """
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.trunkrs import parcels as parcels_module
@@ -242,3 +243,22 @@ async def test_polling_resumes_when_a_parcel_is_added_back(hass):
 
     assert coordinator.current_tier_minutes == MID_INTERVAL_MINUTES
     assert coordinator.update_interval is not None
+
+
+async def test_failed_poll_drops_the_overnight_interval(hass):
+    entry = _entry(hass)
+    coordinator = _coordinator(hass, AsyncMock(), entry)
+    coordinator.update_interval = timedelta(hours=5, minutes=40)
+
+    noon = datetime(2026, 1, 15, 12, tzinfo=UTC)
+    with (
+        patch.object(coordinator, "_async_poll", side_effect=TimeoutError),
+        patch("custom_components.trunkrs.coordinator.dt_util.now", return_value=noon),
+        pytest.raises(TimeoutError),
+    ):
+        await coordinator._async_update_data()
+
+    assert coordinator.update_interval is not None
+    assert coordinator.update_interval <= timedelta(
+        minutes=MID_INTERVAL_MINUTES + STAGGER_MINUTES
+    )
