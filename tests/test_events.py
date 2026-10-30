@@ -12,8 +12,18 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.trunkrs.api import TrunkrsApiError
 from custom_components.trunkrs.config_flow import async_verify_parcel
-from custom_components.trunkrs.const import CONF_POSTAL_CODE, DOMAIN, ParcelStatus
+from custom_components.trunkrs.const import (
+    CONF_DELIVERED_FILTER_AMOUNT,
+    CONF_DELIVERED_FILTER_TYPE,
+    CONF_PARCELS,
+    CONF_POSTAL_CODE,
+    CONF_TRUNKRS_NR,
+    DOMAIN,
+    ParcelStatus,
+)
 from custom_components.trunkrs.coordinator import TrunkrsCoordinator
+
+from .payloads import DELIVERED, IN_TRANSIT
 
 
 def _coordinator(hass) -> TrunkrsCoordinator:
@@ -166,3 +176,33 @@ async def test_verify_helper_passes_through_a_definite_answer(hass):
         "custom_components.trunkrs.config_flow.TrunkrsApiClient", return_value=client
     ):
         assert await async_verify_parcel(hass, "TR1", "1234AB") is False
+
+
+async def test_a_parcel_the_delivered_list_leaves_out_still_fires_delivered(hass):
+    """The retention option limits the delivered sensor, never the events."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="1234AB",
+        options={
+            CONF_POSTAL_CODE: "1234AB",
+            CONF_PARCELS: [
+                {CONF_TRUNKRS_NR: "TR1", CONF_POSTAL_CODE: "1234AB"},
+                {CONF_TRUNKRS_NR: "TR2", CONF_POSTAL_CODE: "1234AB"},
+            ],
+            CONF_DELIVERED_FILTER_TYPE: "parcels",
+            CONF_DELIVERED_FILTER_AMOUNT: 1,
+        },
+    )
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    coordinator = TrunkrsCoordinator(hass, client, entry)
+    delivered = _listen(hass, "parcel_delivered")
+
+    client.async_get_parcel = AsyncMock(return_value=IN_TRANSIT)
+    await coordinator._async_update_data()
+    client.async_get_parcel = AsyncMock(return_value=DELIVERED)
+    await coordinator._async_update_data()
+    await hass.async_block_till_done()
+
+    assert sorted(e.data["barcode"] for e in delivered) == ["TR1", "TR2"]
+    assert len(coordinator.delivered) == 1
