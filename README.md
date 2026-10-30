@@ -132,6 +132,7 @@ Standard HA removal applies: **Settings → Devices & services → Trunkrs → �
 | `sensor.trunkrs_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.trunkrs_next_delivery` | Earliest expected delivery moment across all active parcels |
 | `sensor.trunkrs_delivered_parcels` | Recently delivered parcels (see the retention option) |
+| `calendar.trunkrs_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
 | `sensor.trunkrs_last_successful_update` | Diagnostic: when Trunkrs was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
