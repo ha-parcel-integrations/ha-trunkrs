@@ -95,12 +95,18 @@ Where this repo diverges from it, that is recorded below under
   Trunkrs" → callers **accept the parcel anyway** (an outage must never stop a user
   adding a valid parcel). Only a definite `False` blocks. (Verify-before-store is a
   capability GLS lacks, so unlike GLS this rejects typos up front.)
-- **`delivered` is `raw_status == STATE_DELIVERED`** (`parcels.py`) — a real
-  check against the one confirmed terminal state, not a guess. An unmapped
+- **`delivered` is `status is DELIVERED`**, and the status maps
+  `STATE_DELIVERED` — the one confirmed terminal state, not a guess. An unmapped
   status still reports `delivered: False`, so no parcel is wrongly filed as
   completed and vanishes from view.
-- **No pickup sensors** (unlike GLS's `en_route_to_pickup_point` / `awaiting_pickup`)
-  — we don't yet know whether Trunkrs exposes pickup points; two permanently-zero
+- **Parcel contract:** `parcels.py` carries the shared helpers
+  (`planned_window`, `planned_for_status`, `is_pickup`). The narrow `from`/`to`
+  slot is used only as a pair, else the wide `low`/`high` pair, never mixed; a
+  lone start runs to 23:59:59 of that day in `Europe/Amsterdam`. `planned_*` are
+  emptied once the parcel is delivered. `next_delivery` skips a parcel whose
+  window has ended and the calendar shows a whole-day window as an all-day
+  event.
+- **`pickup` is constant `False`**: Trunkrs is home delivery only. **No pickup sensors**: we don't yet know whether Trunkrs exposes pickup points; two permanently-zero
   sensors are worse than adding them later.
 - **Diagnostics is the collection mechanism**, not just debugging: it carries the
   raw payload + a "read this before sharing" note; `TO_REDACT` is deliberately

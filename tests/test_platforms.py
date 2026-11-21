@@ -66,7 +66,7 @@ async def test_next_delivery_reports_the_promised_window_start(hass):
     await _setup(hass)
     assert (
         hass.states.get("sensor.trunkrs_1234ab_next_delivery").state
-        == "2026-07-10T15:00:00+00:00"
+        == "2099-07-10T15:00:00+00:00"
     )
 
 

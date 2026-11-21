@@ -99,8 +99,8 @@ IN_TRANSIT = {
     "deliveryAttempts": [],
     # Before the tour is planned only the wide promised slot is filled in.
     "timeSlot": {
-        "low": "2026-07-10T15:00:00.000Z",
-        "high": "2026-07-10T20:30:00.000Z",
+        "low": "2099-07-10T15:00:00.000Z",
+        "high": "2099-07-10T20:30:00.000Z",
         "from": None,
         "to": None,
     },

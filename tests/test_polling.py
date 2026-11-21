@@ -211,6 +211,12 @@ async def test_polling_is_hot_for_an_out_for_delivery_parcel(hass, monkeypatch):
                 "setAt": "2026-07-10T11:07:46.198Z",
                 "reasonCode": None,
             },
+            "timeSlot": {
+                "low": (datetime.now(UTC) + timedelta(minutes=30)).isoformat(),
+                "high": (datetime.now(UTC) + timedelta(hours=3)).isoformat(),
+                "from": None,
+                "to": None,
+            },
         }
     )
     coordinator = _coordinator(hass, client, entry)

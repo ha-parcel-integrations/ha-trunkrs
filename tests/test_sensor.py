@@ -151,11 +151,11 @@ async def test_next_delivery_ignores_unparseable_moments(hass):
 async def test_next_delivery_assumes_utc_for_naive_timestamps(hass):
     entry = _entry(hass)
     coordinator = _coordinator(
-        hass, entry, [_parcel("naive", planned_from="2026-05-01T10:00:00")]
+        hass, entry, [_parcel("naive", planned_from="2099-05-01T10:00:00")]
     )
     sensor = TrunkrsNextDeliverySensor(coordinator, entry)
 
-    assert sensor.native_value == datetime(2026, 5, 1, 10, 0, tzinfo=UTC)
+    assert sensor.native_value == datetime(2099, 5, 1, 10, 0, tzinfo=UTC)
 
 
 # --- setup-time cleanup of stale entities ----------------------------------
@@ -190,3 +190,25 @@ async def test_setup_removes_stale_parcel_sensors_but_keeps_the_others(hass):
     # ...and the refresh button (same unique-id prefix, different domain) is not.
     assert registry.async_get(button.entity_id) is not None
     assert hass.states.get("sensor.trunkrs_1234ab_last_successful_update") is not None
+
+
+def _in(**delta) -> str:
+    return (datetime.now(UTC) + timedelta(**delta)).isoformat()
+
+
+async def test_next_delivery_skips_a_window_that_has_ended(hass):
+    entry = _entry(hass)
+    stale = _parcel("A", planned_from=_in(days=-3), planned_to=_in(days=-2))
+    moment_only = _parcel("B", planned_from=_in(hours=-2))
+    later = _parcel("C", planned_from=_in(days=2))
+    sensor = TrunkrsNextDeliverySensor(
+        _coordinator(hass, entry, [stale, moment_only, later]), entry
+    )
+    assert sensor.extra_state_attributes["barcode"] == "C"
+
+
+async def test_next_delivery_keeps_a_window_that_is_still_running(hass):
+    entry = _entry(hass)
+    running = _parcel("A", planned_from=_in(hours=-1), planned_to=_in(hours=2))
+    sensor = TrunkrsNextDeliverySensor(_coordinator(hass, entry, [running]), entry)
+    assert sensor.extra_state_attributes["barcode"] == "A"

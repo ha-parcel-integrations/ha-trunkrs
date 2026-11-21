@@ -139,8 +139,8 @@ def test_normalize_prefers_the_narrow_delivery_window():
 def test_normalize_falls_back_to_the_wide_delivery_window():
     """Before the tour is planned only low/high are populated."""
     parcel = normalize_parcel(IN_TRANSIT, trunkrs_nr="TR123")
-    assert parcel["planned_from"] == "2026-07-10T15:00:00.000Z"
-    assert parcel["planned_to"] == "2026-07-10T20:30:00.000Z"
+    assert parcel["planned_from"] == "2099-07-10T15:00:00.000Z"
+    assert parcel["planned_to"] == "2099-07-10T20:30:00.000Z"
 
 
 def test_data_processed_maps_to_registered():

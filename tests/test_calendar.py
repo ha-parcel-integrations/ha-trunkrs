@@ -5,7 +5,7 @@ so it can be tested fully today by injecting parcels with delivery windows —
 even though the field mapping that produces them is not written yet.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import AsyncMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -131,3 +131,53 @@ async def test_get_events_filters_by_range(hass):
 async def test_unparseable_timestamp_is_skipped(hass):
     calendar = _calendar(hass, [_parcel(start="not-a-date")])
     assert calendar._events() == []
+
+
+async def test_whole_day_window_is_an_all_day_event(hass):
+    cal = _calendar(
+        hass,
+        [_parcel(start="2099-01-01T00:00:00+01:00", end="2099-01-01T23:59:59+01:00")],
+    )
+    event = cal._events()[0]
+    assert (event.start, event.end) == (date(2099, 1, 1), date(2099, 1, 2))
+    assert event.all_day
+
+
+async def test_window_over_whole_days_is_one_all_day_event(hass):
+    cal = _calendar(
+        hass, [_parcel(start="2099-01-01T00:00:00", end="2099-01-03T23:59:59")]
+    )
+    event = cal._events()[0]
+    assert (event.start, event.end) == (date(2099, 1, 1), date(2099, 1, 4))
+
+
+async def test_whole_day_window_sent_in_utc_is_all_day_in_local_time(hass):
+    await hass.config.async_set_time_zone("Europe/Amsterdam")
+    cal = _calendar(
+        hass, [_parcel(start="2099-01-01T23:00:00Z", end="2099-01-02T22:59:59Z")]
+    )
+    event = cal._events()[0]
+    assert (event.start, event.end) == (date(2099, 1, 2), date(2099, 1, 3))
+
+
+async def test_a_moment_stretched_to_the_end_of_its_day_stays_timed(hass):
+    cal = _calendar(
+        hass,
+        [_parcel(start="2099-01-01T14:00:00+01:00", end="2099-01-01T23:59:59+01:00")],
+    )
+    assert not cal._events()[0].all_day
+
+
+async def test_all_day_events_are_upcoming_and_filtered_by_range(hass):
+    cal = _calendar(
+        hass,
+        [
+            _parcel("PAST", start="2000-01-01T00:00:00", end="2000-01-01T23:59:59"),
+            _parcel("FUTURE", start="2099-01-01T00:00:00", end="2099-01-01T23:59:59"),
+        ],
+    )
+    assert cal.event.uid == "FUTURE"
+    events = await cal.async_get_events(
+        hass, datetime(2098, 1, 1, tzinfo=UTC), datetime(2100, 1, 1, tzinfo=UTC)
+    )
+    assert {e.uid for e in events} == {"FUTURE"}
