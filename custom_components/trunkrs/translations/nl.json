@@ -103,6 +103,10 @@
         "postal_code": {
           "name": "Postcode",
           "description": "Bezorgpostcode. Kiest de hub als er meerdere zijn ingesteld; anders wordt de enige hub gebruikt."
+        },
+        "contents": {
+          "name": "Inhoud",
+          "description": "Wat er in het pakket zit, in je eigen woorden. Opnieuw aanroepen voor een gevolgd pakket vervangt de inhoud; een lege tekst wist deze."
         }
       }
     },
@@ -113,6 +117,24 @@
         "tracking_code": {
           "name": "Trackingcode",
           "description": "Het Trunkrs-nummer dat je niet meer wilt volgen."
+        }
+      }
+    },
+    "update_contents": {
+      "name": "Pakketinhoud bijwerken",
+      "description": "Stel in wat er in een pakket zit, in je eigen woorden, voor een trackingcode. Een lege tekst wist de inhoud.",
+      "fields": {
+        "tracking_code": {
+          "name": "Trackingcode",
+          "description": "Het Trunkrs-nummer van het pakket."
+        },
+        "contents": {
+          "name": "Inhoud",
+          "description": "Wat er in het pakket zit, in je eigen woorden. Een lege tekst wist de inhoud."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Het account waarvoor dit wordt opgeslagen. Nodig als geen account de code al kent."
         }
       }
     }
@@ -154,6 +176,11 @@
       "parcel": {
         "name": "Pakket {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "Geen enkel account kent deze code. Kies het account waarvoor je dit wilt opslaan."
     }
   }
 }

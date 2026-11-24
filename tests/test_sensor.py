@@ -139,6 +139,17 @@ async def test_next_delivery_picks_the_earliest(hass):
     assert sensor.extra_state_attributes["sender"] == "Shop"
 
 
+async def test_next_delivery_carries_the_contents(hass):
+    entry = _entry(hass)
+    coordinator = _coordinator(
+        hass,
+        entry,
+        [_parcel("A", planned_from="2099-05-01T10:00:00Z", contents="Running shoes")],
+    )
+    sensor = TrunkrsNextDeliverySensor(coordinator, entry)
+    assert sensor.extra_state_attributes["contents"] == "Running shoes"
+
+
 async def test_next_delivery_ignores_unparseable_moments(hass):
     entry = _entry(hass)
     coordinator = _coordinator(hass, entry, [_parcel("bad", planned_from="nope")])

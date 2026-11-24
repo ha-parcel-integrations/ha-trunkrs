@@ -48,6 +48,7 @@ A custom Home Assistant integration that tracks your [Trunkrs](https://trunkrs.n
 - Summary sensors: incoming parcels, next delivery, recently delivered parcels
 - Read-only **Deliveries** calendar with the expected delivery windows
 - `trunkrs.track_parcel` / `trunkrs.untrack_parcel` services, so a dashboard button can add a parcel — numbers are checked with Trunkrs before they are stored, so a typo is rejected straight away
+- A `contents` note per parcel, set with `trunkrs.update_contents` or the `contents` field on `trunkrs.track_parcel`; it is stored locally, titles the calendar event and shows on the next-delivery sensor
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed)
 - Opt-in per-parcel status history
 - Manual refresh button and a diagnostic last-update sensor
@@ -174,8 +175,11 @@ flooded with notifications for parcels that already existed.
 
 | Service | Fields | Description |
 |---|---|---|
-| `trunkrs.track_parcel` | `tracking_code`, `postal_code` (optional, defaults to the hub's) | Start tracking a parcel — validated against Trunkrs before it is stored |
+| `trunkrs.track_parcel` | `tracking_code`, `postal_code` (optional, defaults to the hub's), `contents` (optional) | Start tracking a parcel — validated against Trunkrs before it is stored — optionally noting what is in it |
 | `trunkrs.untrack_parcel` | `tracking_code` | Stop tracking a parcel |
+| `trunkrs.update_contents` | `tracking_code`, `contents`, `config_entry_id` (optional) | Set what is in a parcel, tracked or not; an empty `contents` clears it. It goes to every hub that lists the code; name one with `config_entry_id` (needed for a code no hub lists yet). |
+
+The `contents` text you set is stored locally, shows as the `contents` field of the parcel, titles the parcel's calendar event and shows on the next-delivery sensor.
 
 ## Examples
 

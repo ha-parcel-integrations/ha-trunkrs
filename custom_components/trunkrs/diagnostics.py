@@ -41,6 +41,8 @@ TO_REDACT = {
     "merchantName",
     "sender",
     "receiver",
+    # the user's own note on what is in the parcel
+    "contents",
     # third-party PII: a neighbour who accepted the parcel
     "neighbourName",
     "neighbourAddressLine",

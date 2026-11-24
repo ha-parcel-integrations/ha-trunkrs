@@ -30,6 +30,7 @@ from .const import (
     STAGGER_MINUTES,
     ParcelStatus,
 )
+from .contents import ContentsStore, normalize_code
 from .parcels import apply_delivered_filter, normalize_parcel, sort_parcels_by_ts
 
 _LOGGER = logging.getLogger(__name__)
@@ -136,6 +137,7 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
             update_interval=timedelta(minutes=HOT_INTERVAL_MINUTES),
         )
         self._client = client
+        self.contents_store = ContentsStore(hass, entry.entry_id)
         self.delivered: list[dict] = []
         # trunkrs_nr -> last successful raw payload, so a transient fetch
         # failure keeps the parcel visible instead of dropping its sensor.
@@ -163,6 +165,26 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         # diagnostics; ``None`` before the first refresh and whenever polling
         # is fully suspended (nothing tracked, or everything delivered).
         self._current_tier_minutes: int | None = None
+
+    def _apply_contents(self, parcel: dict, code: object) -> dict:
+        """Put the user's own contents text over the carrier's, when there is one."""
+        user_value = self.contents_store.get(code)
+        if user_value is not None:
+            parcel["contents"] = user_value
+        return parcel
+
+    @property
+    def known_codes(self) -> set[str]:
+        """Codes this entry lists: its tracked numbers and any parcel it holds."""
+        codes = {
+            normalize_code(item[CONF_TRUNKRS_NR])
+            for item in self._tracked()
+            if item.get(CONF_TRUNKRS_NR)
+        }
+        for parcel in [*(self.data or []), *self.delivered]:
+            if parcel.get("barcode"):
+                codes.add(normalize_code(parcel["barcode"]))
+        return codes
 
     @property
     def current_tier_minutes(self) -> int | None:
@@ -307,11 +329,14 @@ class TrunkrsCoordinator(DataUpdateCoordinator[list[dict]]):
         normalized_entries = [
             (
                 trunkrs_nr,
-                normalize_parcel(
-                    raw,
-                    trunkrs_nr=trunkrs_nr,
-                    postal_code=postal_code_by_nr.get(trunkrs_nr, postal_code),
-                    include_history=include_history,
+                self._apply_contents(
+                    normalize_parcel(
+                        raw,
+                        trunkrs_nr=trunkrs_nr,
+                        postal_code=postal_code_by_nr.get(trunkrs_nr, postal_code),
+                        include_history=include_history,
+                    ),
+                    trunkrs_nr,
                 ),
             )
             for trunkrs_nr, raw in entries_by_nr.items()

@@ -375,6 +375,7 @@ def normalize_parcel(
         "barcode": trunkrs_nr,
         "sender": raw.get("senderName") or raw.get("merchantName"),
         "receiver": raw.get("recipientName"),
+        "contents": None,
         "status": status,
         "raw_status": raw_status,
         "delivered": delivered,

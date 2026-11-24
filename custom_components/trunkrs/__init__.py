@@ -11,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import TrunkrsApiClient
 from .const import DOMAIN, PLATFORMS
+from .contents import ContentsStore
 from .coordinator import TrunkrsCoordinator
 from .services import async_setup_services, async_unload_services
 
@@ -35,6 +36,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: TrunkrsConfigEntry) -> b
     # needed, unlike the account-based carriers in the suite.
     client = TrunkrsApiClient(async_get_clientsession(hass))
     coordinator = TrunkrsCoordinator(hass, client, entry)
+
+    await coordinator.contents_store.async_load()
 
     # Fetch initial data here, before forwarding to platforms. Raising
     # ConfigEntryNotReady from a forwarded platform is too late for HA to catch
@@ -80,3 +83,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: TrunkrsConfigEntry) -> 
     if not others_loaded:
         async_unload_services(hass)
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: TrunkrsConfigEntry) -> None:
+    """Delete the contents the user set for the removed entry."""
+    await ContentsStore(hass, entry.entry_id).async_remove()

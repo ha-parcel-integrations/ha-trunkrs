@@ -39,6 +39,27 @@ def _parcel(barcode="TR1", start=None, end=None, **extra) -> dict:
     }
 
 
+async def test_contents_is_the_event_title(hass):
+    calendar = _calendar(
+        hass,
+        [_parcel(start=_iso(2), end=_iso(4), sender="Shop", contents="Garden hose")],
+    )
+    assert calendar._events()[0].summary == "Garden hose"
+
+
+async def test_title_falls_back_to_sender_without_contents(hass):
+    calendar = _calendar(
+        hass,
+        [_parcel(start=_iso(2), end=_iso(4), sender="Shop", contents=None)],
+    )
+    assert calendar._events()[0].summary == "Shop"
+
+
+async def test_title_keeps_the_barcode_fallback_without_contents_or_sender(hass):
+    calendar = _calendar(hass, [_parcel(start=_iso(2), end=_iso(4), contents=None)])
+    assert calendar._events()[0].summary == "Parcel TR1"
+
+
 # One fixed base instant, so offsets are exact — computing now() per call
 # leaves microsecond drift between a start and its end.
 _BASE = datetime.now(UTC)

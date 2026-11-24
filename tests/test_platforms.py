@@ -154,3 +154,11 @@ async def test_diagnostics_redact_personal_fields(hass):
     assert raw["auditLogs"] == "**REDACTED**"
     # our own stored credentials too
     assert diag["entry_options"]["postal_code"] == "**REDACTED**"
+
+
+async def test_diagnostics_redact_the_contents(hass):
+    entry = await _setup(hass)
+    entry.runtime_data.coordinator.data[0]["contents"] = "Running shoes"
+    diag = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert diag["incoming"][0]["contents"] == "**REDACTED**"
